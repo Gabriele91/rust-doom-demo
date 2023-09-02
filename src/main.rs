@@ -102,23 +102,15 @@ fn draw_3d(mut pixels: &mut Pixels, player: &Player) {
         return;
     // Point 1 behind player, clip
     } else if wy[0] < 1 {
-        let wx1 = wx[1];
-        let wy1 = wy[1];
-        let wz1 = wz[1];
+        let (wx1, wy1, wz1) = (wx[1], wy[1], wz[1]);
         clip_behind_player(&mut wx[0], &mut wy[0], &mut wz[0], wx1, wy1, wz1); // bottom line
-        let wx3 = wx[3];
-        let wy3 = wy[3];
-        let wz3 = wz[3];
+        let (wx3, wy3, wz3) = (wx[3], wy[3], wz[3]);
         clip_behind_player(&mut wx[2], &mut wy[2], &mut wz[2], wx3, wy3, wz3); // top line
     // Point 2 behind player, clip
     } else if wy[1] < 1 {
-        let wx0 = wx[0];
-        let wy0 = wy[0];
-        let wz0 = wz[0];
+        let (wx0, wy0, wz0) = (wx[0], wy[0], wz[0]);
         clip_behind_player(&mut wx[1], &mut wy[1], &mut wz[1], wx0, wy0, wz0); // bottom line
-        let wx2 = wx[2];
-        let wy2 = wy[2];
-        let wz2 = wz[2];
+        let (wx2, wy2, wz2) = (wx[2], wy[2], wz[2]);
         clip_behind_player(&mut wx[3], &mut wy[3], &mut wz[3], wx2, wy2, wz2); // top line
     }
     // Screen position
