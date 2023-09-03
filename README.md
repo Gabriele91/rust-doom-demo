@@ -51,4 +51,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - Original C code: [3DSage/OpenGL-Doom_tutorial_part_2](https://github.com/3DSage/OpenGL-Doom_tutorial_part_2)
-- Any other acknowledgments or credits you wish to include.
