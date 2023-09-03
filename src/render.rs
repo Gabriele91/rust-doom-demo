@@ -16,7 +16,7 @@ enum Face {
 fn clip_behind_player(point1: &mut Vec3<i32>, point2: &Vec3<i32>) {
     let da = point1.y as f32;
     let db = point2.y as f32;
-    let mut d = db - da;
+    let mut d = da - db;
     if d == 0.0 {
         d = 1.0;
     }
@@ -71,14 +71,14 @@ fn project_wall(
         return (false, wall_distance_pw2);
     }  
     // Point 1 behind player, clip
-    else if wall[0].y < 1 {
+    if wall[0].y < 1 {
         let wall_1 = wall[1].clone();
         clip_behind_player(&mut wall[0], &wall_1); // bottom line
         let wall_3 = wall[3].clone();
         clip_behind_player(&mut wall[2], &wall_3); // top line
     }  
     // Point 2 behind player, clip
-    else if wall[1].y < 1 {
+    if wall[1].y < 1 {
         let wall_0 = wall[0].clone();
         clip_behind_player(&mut wall[1], &wall_0); // bottom line
         let wall_2 = wall[2].clone();
