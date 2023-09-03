@@ -10,7 +10,7 @@ use pixels::Pixels;
 
 fn clip_behind_player(point1: &mut Vec3<i32>, point2: &Vec3<i32>) {
     let da = point1.y as f32;
-    let db = point1.y as f32;
+    let db = point2.y as f32;
     let mut d = db - da;
     if d == 0.0 {
         d = 1.0;
@@ -36,24 +36,24 @@ fn project_wall(
     points: &[Vec2<i32>; 2],
     height: &Vec2<i32>,
 ) -> (bool, i32) {
+    // Cache cos and sin
+    let pcos = player.cos();
+    let psin = player.sin();
     // First line in 3D
     for i in 0..2 {
         // World X
-        wall[i].x =
-            ((points[i].x as f32) * player.cos() - (points[i].y as f32) * player.sin()) as i32;
+        wall[i].x = ((points[i].x as f32) * pcos - (points[i].y as f32) * psin) as i32;
         // World Y
-        wall[i].y =
-            ((points[i].y as f32) * player.cos() + (points[i].x as f32) * player.sin()) as i32;
+        wall[i].y = ((points[i].y as f32) * pcos + (points[i].x as f32) * psin) as i32;
         // World Z
         wall[i].z = ((height.x - player.position.z) as f32
-            + ((player.updown * wall[i].y) as f32 / consts::UPDOWN_FACTOR))
-            as i32;
-    }
-    // Second line,  X,Y are the same, Z is the same + height
-    for i in 2..4 {
-        wall[i].x = wall[i - 2].x;
-        wall[i].y = wall[i - 2].y;
-        wall[i].z = wall[i - 2].z + height.y;
+                  + ((player.updown * wall[i].y) as f32 / consts::UPDOWN_FACTOR)) as i32;
+
+        // Second line,  X,Y are the same
+        wall[i + 2].x = wall[i].x;
+        wall[i + 2].y = wall[i].y;
+        // Z is the same + height
+        wall[i + 2].z = wall[i].z + height.y;
     }
     // Distance
     let wall_distance_pw2 = distance_pw2(
@@ -64,17 +64,19 @@ fn project_wall(
     if wall[0].y < 1 && wall[1].y < 1 {
         // No draw
         return (false, wall_distance_pw2);
+    }  
     // Point 1 behind player, clip
-    } else if wall[0].y < 1 {
-        let wall_1 = wall[1];
+    else if wall[0].y < 1 {
+        let wall_1 = wall[1].clone();
         clip_behind_player(&mut wall[0], &wall_1); // bottom line
-        let wall_3 = wall[3];
+        let wall_3 = wall[3].clone();
         clip_behind_player(&mut wall[2], &wall_3); // top line
-                                                   // Point 2 behind player, clip
-    } else if wall[1].y < 1 {
-        let wall_0 = wall[0];
+    }  
+    // Point 2 behind player, clip
+    else if wall[1].y < 1 {
+        let wall_0 = wall[0].clone();
         clip_behind_player(&mut wall[1], &wall_0); // bottom line
-        let wall_2 = wall[2];
+        let wall_2 = wall[2].clone();
         clip_behind_player(&mut wall[3], &wall_2); // top line
     }
     // Screen position
@@ -96,6 +98,8 @@ fn draw_wall(mut pixels: &mut Pixels, wall: &[Vec3<i32>; 4], color: &[u8; 4]) {
     if dx == 0 {
         dx = 1;
     }
+    // Hold initial x1 starting position 
+    let xs = wall[0].x; 
     // Clip X
     let x1 = clamp(wall[0].x, 0, consts::WIDTH as i32);
     let x2 = clamp(wall[1].x, 0, consts::WIDTH as i32);
@@ -103,10 +107,10 @@ fn draw_wall(mut pixels: &mut Pixels, wall: &[Vec3<i32>; 4], color: &[u8; 4]) {
     for x in x1..x2 {
         // From x1 to x, starting from closet point to current bottom
         let mut y1 =
-            ((dyb as f32 * (((x - x1) as f32 + 0.5) / (dx as f32))) + wall[0].y as f32) as i32;
+            ((dyb as f32 * (((x - xs) as f32 + 0.5) / (dx as f32))) + wall[0].y as f32) as i32;
         // From x1 to x, starting from closet point to current top
         let mut y2 =
-            ((dyt as f32 * (((x - x1) as f32 + 0.5) / (dx as f32))) + wall[2].y as f32) as i32;
+            ((dyt as f32 * (((x - xs) as f32 + 0.5) / (dx as f32))) + wall[2].y as f32) as i32;
         // Clip Y
         y1 = clamp(y1, 0, consts::HEIGHT as i32);
         y2 = clamp(y2, 0, consts::HEIGHT as i32);
