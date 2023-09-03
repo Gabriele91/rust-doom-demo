@@ -7,33 +7,25 @@ use crate::math::{Vec2, Vec3, clamp};
 // Using
 use pixels::Pixels;
 
-fn draw_wall(
-    mut pixels: &mut Pixels,
-    mut x1: i32,
-    mut x2: i32,
-    b1: i32,
-    b2: i32,
-    t1: i32,
-    t2: i32,
-) {
+fn draw_wall(mut pixels: &mut Pixels, wall : &[Vec3<i32>; 4]) {
     // y distance of bottom line
-    let dyb = b2 - b1;
+    let dyb = wall[1].y - wall[0].y;
     // y distance of top line
-    let dyt = t2 - t1;
+    let dyt = wall[3].y - wall[2].y;
     // x distance
-    let mut dx = x2 - x1;
+    let mut dx = wall[1].x - wall[0].x;
     if dx == 0 {
         dx = 1;
     }
     // Clip X
-    x1 = clamp(x1, 0, consts::WIDTH as i32);
-    x2 = clamp(x2, 0, consts::WIDTH as i32);
-    // Hold inizial x1
-    let xs = x1;
+    let x1 = clamp(wall[0].x, 0, consts::WIDTH as i32);
+    let x2 = clamp(wall[1].x, 0, consts::WIDTH as i32);
     // Draw line
     for x in x1..x2 {
-        let mut y1 = ((dyb as f32 * (((x - xs) as f32 + 0.5) / (dx as f32))) + b1 as f32) as i32;
-        let mut y2 = ((dyt as f32 * (((x - xs) as f32 + 0.5) / (dx as f32))) + t1 as f32) as i32;
+        // From x1 to x, starting from closet point to current bottom 
+        let mut y1 = ((dyb as f32 * (((x - x1) as f32 + 0.5) / (dx as f32))) + wall[0].y as f32) as i32;
+        // From x1 to x, starting from closet point to current top 
+        let mut y2 = ((dyt as f32 * (((x - x1) as f32 + 0.5) / (dx as f32))) + wall[2].y as f32) as i32;
         // Clip Y
         y1 = clamp(y1, 0, consts::HEIGHT as i32);
         y2 = clamp(y2, 0, consts::HEIGHT as i32);
@@ -119,5 +111,5 @@ pub fn draw_3d(mut pixels: &mut Pixels, player: &Player) {
     // From a wall described as two points + HEIGHT, to 3D world
     project_wall(&player, &mut wall, &points);
     // Draw
-    draw_wall(&mut pixels, wall[0].x, wall[1].x, wall[0].y, wall[1].y, wall[2].y, wall[3].y);
+    draw_wall(&mut pixels, &wall);
 }
