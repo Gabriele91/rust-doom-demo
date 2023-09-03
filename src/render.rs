@@ -8,6 +8,11 @@ use crate::world::{Sector, Wall, Wolrd};
 // Using
 use pixels::Pixels;
 
+enum Face {
+    Front = 0x01,
+    Back  = 0x02
+}
+
 fn clip_behind_player(point1: &mut Vec3<i32>, point2: &Vec3<i32>) {
     let da = point1.y as f32;
     let db = point2.y as f32;
@@ -137,26 +142,37 @@ pub fn draw_3d(mut pixels: &mut Pixels, player: &Player, wolrd: &mut Wolrd) {
     for sector in &mut wolrd.sectors {
         // Clear distance
         sector.distance = 0;
-        // For each wall
-        for wall in sector.wall.x..sector.wall.y {
-            // Wall description
-            let points = [
-                wolrd.walls[wall as usize].point1 - player.position.xy(),
-                wolrd.walls[wall as usize].point2 - player.position.xy(),
-            ];
-            // From a wall described as two points + height, to 3D world
-            let (draw, distance) =
-                project_wall(&player, &mut projected_wall, &points, &sector.height);
-            // Draw
-            if draw {
-                draw_wall(
-                    &mut pixels,
-                    &projected_wall,
-                    &wolrd.walls[wall as usize].color,
-                );
+        // Back and front
+        for face in &[Face::Back, Face::Front]{ 
+            // For each wall
+            for wall in sector.wall.x..sector.wall.y {
+                // Wall description
+                let points = { 
+                    match face {
+                        Face::Front => [
+                            wolrd.walls[wall as usize].point1 - player.position.xy(),
+                            wolrd.walls[wall as usize].point2 - player.position.xy(),
+                        ],
+                        Face::Back => [
+                            wolrd.walls[wall as usize].point2 - player.position.xy(),
+                            wolrd.walls[wall as usize].point1 - player.position.xy(),
+                        ]
+                    }
+                };
+                // From a wall described as two points + height, to 3D world
+                let (draw, distance) =
+                    project_wall(&player, &mut projected_wall, &points, &sector.height);
+                // Draw
+                if draw {
+                    draw_wall(
+                        &mut pixels,
+                        &projected_wall,
+                        &wolrd.walls[wall as usize].color,
+                    );
+                }
+                // Add distance
+                sector.distance += distance as i32;
             }
-            // Add distance
-            sector.distance += distance as i32;
         }
         // AVG distance:
         sector.distance /= sector.wall.y - sector.wall.x;

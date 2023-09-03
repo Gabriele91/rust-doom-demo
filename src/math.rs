@@ -1,31 +1,36 @@
 use core::ops;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Vec2<T> {
     pub x: T,
     pub y: T,
 }
 
-impl<T> Vec2<T> {
+impl<T : Copy> Vec2<T> {
     pub fn new(x: T, y: T) -> Self {
         Vec2 { x, y }
     }
+
+    pub fn yx(&self) -> Vec2<T> {
+        Vec2 { x: self.y, y: self.x }
+    }
 }
 
-impl<T: ops::Add<Output = T>> ops::Add<Vec2<T>> for Vec2<T> {
+impl<T: ops::Add<Output = T> + Copy> ops::Add<Vec2<T>> for Vec2<T> {
     type Output = Vec2<T>;
     fn add(self, right: Vec2<T>) -> Vec2<T> {
         Vec2::new(self.x + right.x, self.y + right.y)
     }
 }
 
-impl<T: ops::Mul<Output = T>> ops::Mul<Vec2<T>> for Vec2<T> {
+impl<T: ops::Mul<Output = T> + Copy> ops::Mul<Vec2<T>> for Vec2<T> {
     type Output = Vec2<T>;
     fn mul(self, right: Vec2<T>) -> Vec2<T> {
         Vec2::new(self.x * right.x, self.y * right.y)
     }
 }
 
-impl<T: ops::Sub<Output = T>> ops::Sub<Vec2<T>> for Vec2<T> {
+impl<T: ops::Sub<Output = T> + Copy> ops::Sub<Vec2<T>> for Vec2<T> {
     type Output = Vec2<T>;
     fn sub(self, right: Vec2<T>) -> Vec2<T> {
         Vec2::new(self.x - right.x, self.y - right.y)
