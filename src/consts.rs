@@ -21,6 +21,7 @@ pub const UPDOWN_VELOCITY : i32 = 1;
 
 // Camera
 pub const FOV : i32 = 180;
+pub const UPDOWN_FACTOR : f32 = 64.0;
 
 // Box
 pub const BOX_DEEP: i32 = 40 * 7;
