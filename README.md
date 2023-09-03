@@ -38,6 +38,8 @@ To run the Rust Doom renderer, use the following commands:
   - F: Descend.
   - Arrow keys: Change the view direction.
 
+![Example](https://github.com/Gabriele91/rust-doom-demo/blob/main/doc/screenshot.png?raw=true)
+
 ## Contributing
 
 If you would like to contribute to this project, please open an issue to discuss potential changes or submit a pull request with your improvements. We welcome contributions from the community.
