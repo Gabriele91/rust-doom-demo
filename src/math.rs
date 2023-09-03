@@ -1,39 +1,4 @@
 use core::ops;
-
-#[derive(Debug, Clone, Copy)]
-pub struct Vec3<T> {
-    pub x: T,
-    pub y: T,
-    pub z: T,
-}
-
-impl<T> Vec3<T> {
-    pub fn new(x: T, y: T, z: T) -> Self {
-        Vec3 { x, y, z }
-    }
-}
-
-impl<T: ops::Add<Output = T>> ops::Add<Vec3<T>> for Vec3<T> {
-    type Output = Vec3<T>;
-    fn add(self, right: Vec3<T>) -> Vec3<T> {
-        Vec3::new(self.x + right.x, self.y + right.y, self.z + right.z)
-    }
-}
-
-impl<T: ops::Mul<Output = T>> ops::Mul<Vec3<T>> for Vec3<T> {
-    type Output = Vec3<T>;
-    fn mul(self, right: Vec3<T>) -> Vec3<T> {
-        Vec3::new(self.x * right.x, self.y * right.y, self.z * right.z)
-    }
-}
-
-impl<T: ops::Sub<Output = T>> ops::Sub<Vec3<T>> for Vec3<T> {
-    type Output = Vec3<T>;
-    fn sub(self, right: Vec3<T>) -> Vec3<T> {
-        Vec3::new(self.x - right.x, self.y - right.y, self.z - right.z)
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
 pub struct Vec2<T> {
     pub x: T,
@@ -64,6 +29,64 @@ impl<T: ops::Sub<Output = T>> ops::Sub<Vec2<T>> for Vec2<T> {
     type Output = Vec2<T>;
     fn sub(self, right: Vec2<T>) -> Vec2<T> {
         Vec2::new(self.x - right.x, self.y - right.y)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Vec3<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
+}
+
+impl<T : Copy> Vec3<T> {
+    pub fn new(x: T, y: T, z: T) -> Self {
+        Vec3 { x, y, z }
+    }
+
+    pub fn xy(&self) -> Vec2<T> {
+        Vec2::new( self.x, self.y )
+    }
+
+    pub fn xz(&self) -> Vec2<T> {
+        Vec2::new( self.x, self.z )
+    }
+
+    pub fn yx(&self) -> Vec2<T> {
+        Vec2::new( self.y, self.x )
+    }
+
+    pub fn yz(&self) -> Vec2<T> {
+        Vec2::new( self.y, self.z )
+    }
+
+    pub fn zx(&self) -> Vec2<T> {
+        Vec2::new( self.z, self.x )
+    }
+
+    pub fn zy(&self) -> Vec2<T> {
+        Vec2::new( self.z, self.y )
+    }
+}
+
+impl<T: ops::Add<Output = T> + Copy> ops::Add<Vec3<T>> for Vec3<T> {
+    type Output = Vec3<T>;
+    fn add(self, right: Vec3<T>) -> Vec3<T> {
+        Vec3::new(self.x + right.x, self.y + right.y, self.z + right.z)
+    }
+}
+
+impl<T: ops::Mul<Output = T> + Copy> ops::Mul<Vec3<T>> for Vec3<T> {
+    type Output = Vec3<T>;
+    fn mul(self, right: Vec3<T>) -> Vec3<T> {
+        Vec3::new(self.x * right.x, self.y * right.y, self.z * right.z)
+    }
+}
+
+impl<T: ops::Sub<Output = T> + Copy> ops::Sub<Vec3<T>> for Vec3<T> {
+    type Output = Vec3<T>;
+    fn sub(self, right: Vec3<T>) -> Vec3<T> {
+        Vec3::new(self.x - right.x, self.y - right.y, self.z - right.z)
     }
 }
 

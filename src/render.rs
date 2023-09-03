@@ -1,44 +1,12 @@
 // Using, d3d
 use crate::consts;
+use crate::math::{clamp, Vec2, Vec3};
 use crate::player::Player;
 use crate::windows::draw_pixel;
-use crate::math::{Vec2, Vec3, clamp};
+use crate::world::{Sector, Wall, Wolrd};
 
 // Using
 use pixels::Pixels;
-
-fn draw_wall(mut pixels: &mut Pixels, wall : &[Vec3<i32>; 4]) {
-    // y distance of bottom line
-    let dyb = wall[1].y - wall[0].y;
-    // y distance of top line
-    let dyt = wall[3].y - wall[2].y;
-    // x distance
-    let mut dx = wall[1].x - wall[0].x;
-    if dx == 0 {
-        dx = 1;
-    }
-    // Clip X
-    let x1 = clamp(wall[0].x, 0, consts::WIDTH as i32);
-    let x2 = clamp(wall[1].x, 0, consts::WIDTH as i32);
-    // Draw line
-    for x in x1..x2 {
-        // From x1 to x, starting from closet point to current bottom 
-        let mut y1 = ((dyb as f32 * (((x - x1) as f32 + 0.5) / (dx as f32))) + wall[0].y as f32) as i32;
-        // From x1 to x, starting from closet point to current top 
-        let mut y2 = ((dyt as f32 * (((x - x1) as f32 + 0.5) / (dx as f32))) + wall[2].y as f32) as i32;
-        // Clip Y
-        y1 = clamp(y1, 0, consts::HEIGHT as i32);
-        y2 = clamp(y2, 0, consts::HEIGHT as i32);
-        // Draw
-        for y in y1..y2 {
-            draw_pixel(
-                &mut pixels,
-                &Vec2::new(x as usize, y as usize),
-                [0xff, 0xff, 0x0, 0xff],
-            );
-        }
-    }
-}
 
 fn clip_behind_player(point1: &mut Vec3<i32>, point2: &Vec3<i32>) {
     let da = point1.y as f32;
@@ -56,60 +24,137 @@ fn clip_behind_player(point1: &mut Vec3<i32>, point2: &Vec3<i32>) {
     }
 }
 
-fn project_wall(player: &Player, wall : &mut [Vec3<i32>; 4], points: &[Vec2<i32>; 2]) {
+fn distance_pw2(point1: &Vec2<i32>, point2: &Vec2<i32>) -> i32 {
+    let delta = *point1 - *point2;
+    let delta_pw2 = delta * delta;
+    return delta_pw2.x + delta_pw2.y;
+}
+
+fn project_wall(
+    player: &Player,
+    wall: &mut [Vec3<i32>; 4],
+    points: &[Vec2<i32>; 2],
+    height: &Vec2<i32>,
+) -> (bool, i32) {
     // First line in 3D
     for i in 0..2 {
         // World X
-        wall[i].x = ((points[i].x as f32) * player.cos() - (points[i].y as f32) * player.sin()) as i32;
+        wall[i].x =
+            ((points[i].x as f32) * player.cos() - (points[i].y as f32) * player.sin()) as i32;
         // World Y
-        wall[i].y = ((points[i].y as f32) * player.cos() + (points[i].x as f32) * player.sin()) as i32;
+        wall[i].y =
+            ((points[i].y as f32) * player.cos() + (points[i].x as f32) * player.sin()) as i32;
         // World Z
-        wall[i].z = (0.0 - player.position.z as f32 + ((player.updown * wall[i].y) as f32 / consts::UPDOWN_FACTOR)) as i32;
+        wall[i].z = ((height.x - player.position.z) as f32
+            + ((player.updown * wall[i].y) as f32 / consts::UPDOWN_FACTOR))
+            as i32;
     }
-    // Second line,  X,Y are the same, Z is the same + HEIGHT
+    // Second line,  X,Y are the same, Z is the same + height
     for i in 2..4 {
-        wall[i].x = wall[i-2].x;
-        wall[i].y = wall[i-2].y;
-        wall[i].z = wall[i-2].z + consts::BOX_HEIGHT;
+        wall[i].x = wall[i - 2].x;
+        wall[i].y = wall[i - 2].y;
+        wall[i].z = wall[i - 2].z + height.y;
     }
+    // Distance
+    let wall_distance_pw2 = distance_pw2(
+        &Vec2::new(0, 0),
+        &Vec2::new((wall[0].x + wall[1].x) / 2, (wall[0].y + wall[1].y) / 2),
+    );
     // Clip wall behind player
     if wall[0].y < 1 && wall[1].y < 1 {
-        return;
+        // No draw
+        return (false, wall_distance_pw2);
     // Point 1 behind player, clip
-    } else if wall[0].y  < 1 {
+    } else if wall[0].y < 1 {
         let wall_1 = wall[1];
         clip_behind_player(&mut wall[0], &wall_1); // bottom line
         let wall_3 = wall[3];
-        clip_behind_player(&mut wall[2], &wall_3); // top line                        
-    // Point 2 behind player, clip
-    } else if wall[1].y  < 1 {
+        clip_behind_player(&mut wall[2], &wall_3); // top line
+                                                   // Point 2 behind player, clip
+    } else if wall[1].y < 1 {
         let wall_0 = wall[0];
         clip_behind_player(&mut wall[1], &wall_0); // bottom line
         let wall_2 = wall[2];
-        clip_behind_player(&mut wall[3], &wall_2); // top line     
+        clip_behind_player(&mut wall[3], &wall_2); // top line
     }
     // Screen position
     for i in 0..4 {
         wall[i].x = (wall[i].x * consts::FOV) / wall[i].y + consts::H_WIDTH as i32;
         wall[i].y = (wall[i].z * consts::FOV) / wall[i].y + consts::H_HEIGHT as i32;
     }
+    // Draw
+    return (true, wall_distance_pw2);
 }
 
-pub fn draw_3d(mut pixels: &mut Pixels, player: &Player) {
+fn draw_wall(mut pixels: &mut Pixels, wall: &[Vec3<i32>; 4], color: &[u8; 4]) {
+    // y distance of bottom line
+    let dyb = wall[1].y - wall[0].y;
+    // y distance of top line
+    let dyt = wall[3].y - wall[2].y;
+    // x distance
+    let mut dx = wall[1].x - wall[0].x;
+    if dx == 0 {
+        dx = 1;
+    }
+    // Clip X
+    let x1 = clamp(wall[0].x, 0, consts::WIDTH as i32);
+    let x2 = clamp(wall[1].x, 0, consts::WIDTH as i32);
+    // Draw line
+    for x in x1..x2 {
+        // From x1 to x, starting from closet point to current bottom
+        let mut y1 =
+            ((dyb as f32 * (((x - x1) as f32 + 0.5) / (dx as f32))) + wall[0].y as f32) as i32;
+        // From x1 to x, starting from closet point to current top
+        let mut y2 =
+            ((dyt as f32 * (((x - x1) as f32 + 0.5) / (dx as f32))) + wall[2].y as f32) as i32;
+        // Clip Y
+        y1 = clamp(y1, 0, consts::HEIGHT as i32);
+        y2 = clamp(y2, 0, consts::HEIGHT as i32);
+        // Draw
+        for y in y1..y2 {
+            draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), *color);
+        }
+    }
+}
+
+pub fn draw_3d(mut pixels: &mut Pixels, player: &Player, wolrd: &mut Wolrd) {
     // Wall points
-    let mut wall = [
+    let mut projected_wall = [
         Vec3::new(0, 0, 0),
         Vec3::new(0, 0, 0),
         Vec3::new(0, 0, 0),
         Vec3::new(0, 0, 0),
     ];
-    // Wall description
-    let mut points = [
-        Vec2::new(-player.position.x + consts::BOX_WIDTH, -player.position.y + 10),
-        Vec2::new(-player.position.x + consts::BOX_WIDTH, -player.position.y + consts::BOX_DEEP + 10),
-    ];
-    // From a wall described as two points + HEIGHT, to 3D world
-    project_wall(&player, &mut wall, &points);
-    // Draw
-    draw_wall(&mut pixels, &wall);
+    // Sort
+    wolrd
+        .sectors
+        .sort_by(|left, right| right.distance.cmp(&left.distance) );
+    // For each sector
+    for sector in &mut wolrd.sectors {
+        // Clear distance
+        sector.distance = 0;
+        // For each wall
+        for wall in sector.wall.x..sector.wall.y {
+            // Wall description
+            let points = [
+                wolrd.walls[wall as usize].point1 - player.position.xy(),
+                wolrd.walls[wall as usize].point2 - player.position.xy(),
+            ];
+            // From a wall described as two points + height, to 3D world
+            let (draw, distance) =
+                project_wall(&player, &mut projected_wall, &points, &sector.height);
+            // Draw
+            if draw {
+                draw_wall(
+                    &mut pixels,
+                    &projected_wall,
+                    &wolrd.walls[wall as usize].color,
+                );
+            }
+            // Add distance
+            sector.distance += distance as i32;
+        }
+        // AVG distance:
+        sector.distance /= sector.wall.y - sector.wall.x;
+    }
 }

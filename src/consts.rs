@@ -5,7 +5,7 @@ pub const WIDTH: u32 = 160 * RESOLUTION;
 pub const HEIGHT: u32 = 120 * RESOLUTION;
 
 // Screen size
-pub const SCREEN_RESOLUTION : u32 = 6;
+pub const SCREEN_RESOLUTION : u32 = 4;
 pub const SCREE_WIDTH: u32 = WIDTH * SCREEN_RESOLUTION;
 pub const SCREE_HEIGHT: u32 = HEIGHT * SCREEN_RESOLUTION;
 
