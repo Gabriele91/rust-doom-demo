@@ -3,7 +3,7 @@ use crate::consts;
 use crate::math::{clamp, Vec2, Vec3};
 use crate::player::Player;
 use crate::windows::draw_pixel;
-use crate::world::World;
+use crate::world::{World, Sector};
 
 // Using
 use std::rc::Rc;
@@ -114,8 +114,10 @@ impl WallProjector {
             // Second line,  X,Y are the same
             self.wall[i + 2].x = self.wall[i].x;
             self.wall[i + 2].y = self.wall[i].y;
-            // Z is the same + height
-            self.wall[i + 2].z = self.wall[i].z + height.y;
+            // Z is to be recompute with new height
+            self.wall[i + 2].z = ((height.y - player.position.z) as f32
+                               + ((player.updown * self.wall[i].y) as f32 / consts::UPDOWN_FACTOR))
+                               as i32;
         }
         // Distance
         self.distance = distance_pw2(
@@ -216,16 +218,19 @@ impl SectorContext {
         }
     }
 
-    pub fn reset(&mut self, world: &World, position: &Vec3<i32>) {
+    pub fn start<'a>(&mut self, position: &Vec3<i32>, sector: &Sector) -> std::slice::Iter<'a, Face> {
         // Clear distance
         self.distance = 0;
         // Draw top/mid/bottom
-        if position.z < world.sectors[self.index].height.x {
+        if position.z < sector.height.x {
             self.surface.view = SurfaceView::Top;
-        } else if position.z > world.sectors[self.index].height.y {
+            [Face::Back, Face::Front].iter()
+        } else if position.z > sector.height.y {
             self.surface.view = SurfaceView::Bottom;
+            [Face::Back, Face::Front].iter()
         } else {
             self.surface.view = SurfaceView::Mid;
+            [Face::Front].iter()
         }
     }
 
@@ -284,12 +289,10 @@ impl Render {
         let sectors_context = &mut self.sectors_context;
         // For each sector
         for context in sectors_context {
-            // Reset
-            context.reset(&self.world, &player.position);
-            // Ref to sector        
+            // Ref to sector
             let sector = &self.world.sectors[context.index];
             // Back and front
-            for face in [Face::Back, Face::Front] {
+            for face in context.start(&player.position, &sector) {
                 // For each wall
                 for wall_id in sector.wall.x..sector.wall.y {
                     // Wall
