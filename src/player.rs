@@ -23,6 +23,7 @@ impl Player {
             updown: 0
         }
     }
+    
     pub fn new_with_position(initial_position: Vec3<i32>) -> Self {
         Player {
             position: initial_position,
