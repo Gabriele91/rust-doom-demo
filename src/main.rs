@@ -15,30 +15,29 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 use winit_input_helper::WinitInputHelper;
-use clap::{App, Arg, ArgMatches};
+use clap::{Command, Arg, ArgMatches};
 
-fn shell_args<'a>() -> ArgMatches<'a> {
-    App::new("Rust-doom-demo")
-    .arg(Arg::with_name("map")
-        .short("m")
+fn shell_args() -> ArgMatches {
+    Command::new("Rust-doom-demo")
+    .author("Gabriele Di Bari")
+    .version("0.0.1")
+    .about("Doom-style renderer.")
+    .arg(Arg::new("map")
+        .short('m')
         .long("map")
-        .takes_value(true)
         .required(true)
         .help("Map path"))
     .get_matches()
 }
 
 fn main() {
-    // Args
     let matches = shell_args();
-    let map_path = matches.value_of("map").unwrap_or("");
-
-    // Map
+    let map_path = matches.get_one::<String>("map").unwrap();
     let map =  match  Map::from(map_path) {
         Some(map) => map,
         _ => panic!("Unable to load map {:?}", map_path),
     };
-
+    
     // Inputs
     let mut input: WinitInputHelper = WinitInputHelper::new();
     let event_loop = EventLoop::new();
