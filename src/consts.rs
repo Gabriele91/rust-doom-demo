@@ -1,4 +1,5 @@
 
+#![allow(dead_code)]
 // Windows size
 pub const RESOLUTION : u32 = 1;
 pub const WIDTH: u32 = 160 * RESOLUTION;
@@ -22,8 +23,3 @@ pub const UPDOWN_VELOCITY : i32 = 1;
 // Camera
 pub const FOV : i32 = 180;
 pub const UPDOWN_FACTOR : f32 = 64.0;
-
-// Box
-pub const BOX_DEEP: i32 = 40 * 7;
-pub const BOX_HEIGHT : i32 = 40;
-pub const BOX_WIDTH : i32 = 40;

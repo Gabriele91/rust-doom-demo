@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Using, d3d
 use crate::math::{Vec3, self};
 use crate::consts::{MOVE_VELOCITY, ROTATION_VELOCITY, UPDOWN_VELOCITY};

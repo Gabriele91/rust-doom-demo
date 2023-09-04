@@ -7,18 +7,19 @@ mod windows;
 // Using d3d
 use crate::math::Vec2;
 use crate::player::Player;
-use crate::world::{Wolrd, Sector, Wall};
+use crate::world::{World, Sector, Wall};
+use crate::render::{Render};
 // Using
+use std::rc::Rc;
 use winit::{
     event::{Event, VirtualKeyCode},
     event_loop::{ControlFlow, EventLoop},
 };
 use winit_input_helper::WinitInputHelper;
-use pixels::Pixels;
 
 fn main() {
-    // Map
-    let mut example = Wolrd {
+
+    let example = Rc::new(World {
         walls: vec![
             Wall { point1: Vec2::new(0, 0)  , point2: Vec2::new(32, 0) , color: [0xff, 0xff, 0xff, 0xff] },
             Wall { point1: Vec2::new(32, 0) , point2: Vec2::new(32, 32), color: [0xCC, 0xCC, 0xCC, 0xff] },
@@ -41,59 +42,65 @@ fn main() {
             Wall { point1: Vec2::new(0, 96) , point2: Vec2::new(0, 64) , color: [0xCC, 0xCC, 0x00, 0xff] },
         ],
         sectors: vec![
-            Sector::new(&Vec2::new(0, 4), &Vec2::new(0, 40)),
-            Sector::new(&Vec2::new(4, 8), &Vec2::new(0, 40)),
-            Sector::new(&Vec2::new(8, 12), &Vec2::new(0, 40)),
-            Sector::new(&Vec2::new(12, 16), &Vec2::new(0, 40)),
+            Sector::new_with_colors(&Vec2::new(0, 4),  &Vec2::new(0, 40), [[0xff,0x0, 0x00,0xff], [0x00,0xff,0x00,0xff]]),
+            Sector::new_with_colors(&Vec2::new(4, 8),  &Vec2::new(0, 40), [[0x00,0xff,0x00,0xff], [0xff,0xff,0x00,0xff]]),
+            Sector::new_with_colors(&Vec2::new(8, 12), &Vec2::new(0, 40), [[0xff,0x00,0xff,0xff], [0x00,0xff,0xff,0xff]]),
+            Sector::new_with_colors(&Vec2::new(12, 16),&Vec2::new(0, 40), [[0xff,0xff,0x00,0xff], [0xff,0x00,0xff,0xff]]),
         ],
-    };
-    // Inputs
-    let mut input: WinitInputHelper = WinitInputHelper::new();
-    let event_loop = EventLoop::new();
+    });
+    // Draw
+    {
+        // Inputs
+        let mut input: WinitInputHelper = WinitInputHelper::new();
+        let event_loop = EventLoop::new();
 
-    // Window
-    let window = windows::build_windows(
-        String::from("Doom style engine"),
-        consts::SCREE_WIDTH,
-        consts::SCREE_HEIGHT,
-        &event_loop,
-    )
-    .unwrap();
+        // Window
+        let window = windows::build_windows(
+            String::from("Doom style engine"),
+            consts::SCREE_WIDTH,
+            consts::SCREE_HEIGHT,
+            &event_loop,
+        )
+        .unwrap();
 
-    // Surface
-    let mut pixels = windows::pixes_from_size(&window, consts::WIDTH, consts::HEIGHT).unwrap();
+        // Surface
+        let mut pixels = windows::pixes_from_size(&window, consts::WIDTH, consts::HEIGHT).unwrap();
 
-    // Logic
-    let mut player = Player::new_with_position(math::Vec3::new(70, -110, 20));
+        // Logic
+        let mut player = Player::new_with_position(math::Vec3::new(70, -110, 20));
 
-    // Main loop
-    event_loop.run(
-        move |event: Event<'_, ()>, _, control_flow: &mut ControlFlow| {
-            match event {
-                // Winit_input_helper doesn't support this event
-                Event::RedrawRequested(_) => {
-                    windows::clear_background(&mut pixels, consts::BACKGROUND_COLOR);
-                    render::draw_3d(&mut pixels, &player, &mut example);
-                    if let Err(_) = pixels.render() {
-                        *control_flow = ControlFlow::Exit;
-                        return;
-                    }
-                }
-                _ => {
-                    if input.update(&event) {
-                        // Close events
-                        if input.key_pressed(VirtualKeyCode::Escape) || input.close_requested() {
+        // Render
+        let mut render = Render::new(example);
+
+        // Main loop
+        event_loop.run(
+            move |event: Event<'_, ()>, _, control_flow: &mut ControlFlow| {
+                match event {
+                    // Winit_input_helper doesn't support this event
+                    Event::RedrawRequested(_) => {
+                        windows::clear_background(&mut pixels, consts::BACKGROUND_COLOR);
+                        render.draw(&mut pixels, &player);
+                        if let Err(_) = pixels.render() {
                             *control_flow = ControlFlow::Exit;
                             return;
                         }
-                        // Player
-                        player.execute_input(&event, &input);
-                        // Draw
-                        window.request_redraw();
+                    }
+                    _ => {
+                        if input.update(&event) {
+                            // Close events
+                            if input.key_pressed(VirtualKeyCode::Escape) || input.close_requested() {
+                                *control_flow = ControlFlow::Exit;
+                                return;
+                            }
+                            // Player
+                            player.execute_input(&event, &input);
+                            // Draw
+                            window.request_redraw();
+                        }
                     }
                 }
-            }
 
-        },
-    );
+            },
+        );
+    }
 }

@@ -1,12 +1,13 @@
+
+#![allow(dead_code)]
 // Using, d3d
 use crate::math::Vec2;
 // Using
 use pixels::{Error, Pixels, SurfaceTexture};
 use winit::{
-    dpi::{LogicalSize, Position},
+    dpi::LogicalSize,
     error::OsError,
-    event::{Event, VirtualKeyCode},
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::EventLoop,
     window::Window,
     window::WindowBuilder,
 };
