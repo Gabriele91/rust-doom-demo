@@ -9,13 +9,13 @@ use crate::world::{World, Sector};
 use std::rc::Rc;
 use pixels::Pixels;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum Face {
     Front = 0x01,
     Back = 0x02,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum SurfaceView {
     Top = 0x01,
     Bottom = 0x02,
@@ -167,41 +167,33 @@ impl WallProjector {
 }
 
 impl Surface {
-    pub fn draw(&mut self, mut pixels : &mut Pixels, face: &Face, x: i32, y1: i32, y2: i32,  colors: &[[u8; 4]; 2]) -> bool {
+    pub fn get_surface_from_backside<'a>(&'a mut self, face: &Face, x: i32, y1: &mut i32, y2: &mut i32, colors: &[&'a [u8; 4]; 3]) -> &[u8; 4] {
         // Surface
         match face {
             Face::Back => {
                 match self.view {
-                    SurfaceView::Top => { self.points[x as usize] = y1; return false; }
-                    SurfaceView::Bottom => { self.points[x as usize] = y2; return false; }
-                    SurfaceView::Mid => {}
-                }
-            }
-            Face::Front => {
-                match self.view {
                     SurfaceView::Top => { 
-                        for y in self.points[x as usize]..y1 {
-                            draw_pixel(
-                                &mut pixels,
-                                &Vec2::new(x as usize, y as usize),
-                                colors[0],
-                            );
-                        }
+                        *y2 = self.points[x as usize];  
+                        colors[1]
                     }
                     SurfaceView::Bottom => { 
-                        for y in y2..self.points[x as usize] {
-                            draw_pixel(
-                                &mut pixels,
-                                &Vec2::new(x as usize, y as usize),
-                                colors[1],
-                            );
-                        }
+                        *y1 = self.points[x as usize];
+                        colors[2] 
                     }
-                    SurfaceView::Mid => {}
+                    SurfaceView::Mid => {
+                        colors[0]
+                    }
                 }
+            },
+            Face::Front => {
+                match self.view {
+                    SurfaceView::Top    => { self.points[x as usize] = *y1; } // bottom save to top
+                    SurfaceView::Bottom => { self.points[x as usize] = *y2; } // top save to bottom
+                    SurfaceView::Mid    => {}
+                }
+                colors[0]
             }
         }
-        return true;
     }
 }
 
@@ -224,17 +216,19 @@ impl SectorContext {
         // Draw top/mid/bottom
         if position.z < sector.height.x {
             self.surface.view = SurfaceView::Top;
-            [Face::Back, Face::Front].iter()
+            self.surface.points.fill(consts::HEIGHT as i32);
+            [Face::Front, Face::Back].iter()
         } else if position.z > sector.height.y {
             self.surface.view = SurfaceView::Bottom;
-            [Face::Back, Face::Front].iter()
+            self.surface.points.fill(0);
+            [Face::Front, Face::Back].iter()
         } else {
             self.surface.view = SurfaceView::Mid;
             [Face::Front].iter()
         }
     }
 
-    fn draw(&mut self,mut pixels: &mut Pixels, wall_projector: &WallProjector, color: &[u8; 4], top_bottom_colors: &[[u8; 4]; 2]) {
+    fn draw(&mut self,mut pixels: &mut Pixels, wall_projector: &WallProjector, wcolor: &[u8; 4], btcolors: &[[u8; 4]; 2]) {
         // Wall
         let wall = &wall_projector.wall;
         // y distance of bottom line
@@ -251,6 +245,8 @@ impl SectorContext {
         // Clip X
         let x1 = clamp(wall[0].x, 0, consts::WIDTH as i32);
         let x2 = clamp(wall[1].x, 0, consts::WIDTH as i32);
+        // color set
+        let color_set = [&wcolor, &btcolors[0], &btcolors[1]];
         // Draw line
         for x in x1..x2 {
             // From x1 to x, starting from closet point to current bottom
@@ -260,12 +256,11 @@ impl SectorContext {
             // Clip Y
             y1 = clamp(y1, 0, consts::HEIGHT as i32);
             y2 = clamp(y2, 0, consts::HEIGHT as i32);
-            // Draw surface
-            if self.surface.draw(&mut pixels, &wall_projector.face, x, y1, y2, &top_bottom_colors){
-                // Draw wall
-                for y in y1..y2 {
-                    draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), *color);
-                }
+            // Update surface
+            let color = self.surface.get_surface_from_backside(&wall_projector.face, x, &mut y1, &mut y2, &color_set);
+            // Draw wall
+            for y in y1..y2 {
+                draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), *color);
             }
         }
     }
