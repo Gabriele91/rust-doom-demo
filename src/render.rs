@@ -228,7 +228,7 @@ impl SectorContext {
         }
     }
 
-    fn draw(&mut self,mut pixels: &mut Pixels, wall_projector: &WallProjector, wcolor: &[u8; 4], btcolors: &[[u8; 4]; 2]) {
+    fn draw(&mut self,mut pixels: &mut Pixels, wall_projector: &WallProjector, colors: &[&[u8; 4]; 3]) {
         // Wall
         let wall = &wall_projector.wall;
         // y distance of bottom line
@@ -245,8 +245,6 @@ impl SectorContext {
         // Clip X
         let x1 = clamp(wall[0].x, 0, consts::WIDTH as i32);
         let x2 = clamp(wall[1].x, 0, consts::WIDTH as i32);
-        // color set
-        let color_set = [&wcolor, &btcolors[0], &btcolors[1]];
         // Draw line
         for x in x1..x2 {
             // From x1 to x, starting from closet point to current bottom
@@ -257,10 +255,10 @@ impl SectorContext {
             y1 = clamp(y1, 0, consts::HEIGHT as i32);
             y2 = clamp(y2, 0, consts::HEIGHT as i32);
             // Update surface
-            let color = self.surface.get_surface_from_backside(&wall_projector.face, x, &mut y1, &mut y2, &color_set);
+            let color = self.surface.get_surface_from_backside(&wall_projector.face, x, &mut y1, &mut y2, &colors);
             // Draw wall
             for y in y1..y2 {
-                draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), &color);
+                draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), color);
             }
         }
     }
@@ -296,7 +294,12 @@ impl Render {
                     wall_projector.project(&player, &face, &[wall.point1, wall.point2], &sector.height);
                     // Draw
                     if wall_projector.visiable {
-                        context.draw(&mut pixels, &wall_projector, &wall.color, &sector.colors);
+                        let colors = [
+                            wall.material.color_or(&[0xff; 4]),
+                            sector.material[0].color_or(&[0xff; 4]),
+                            sector.material[1].color_or(&[0xff; 4]),
+                        ];
+                        context.draw(&mut pixels, &wall_projector, &colors);
                     }
                     // Add distance
                     context.distance += wall_projector.distance;

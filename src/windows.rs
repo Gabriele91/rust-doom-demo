@@ -44,29 +44,7 @@ pub fn clear_background(pixels: &mut Pixels, color: [u8; 4]) {
     frame.copy_from_slice(&color.repeat(size));
 }
 
-pub fn draw_pixel<const CHANNELS: usize>(
-    pixels: &mut Pixels,
-    position: &Vec2<usize>,
-    colors: &[u8; CHANNELS],
-) {
-    let size = pixels.texture().size();
-    if position.x >= size.width as usize|| position.y >= size.height as usize {
-        return;
-    }
-    let frame = pixels.frame_mut();
-    let row_size = (size.width as usize) * CHANNELS; // 4 colors per byte
-    let offset: usize = position.y * row_size + position.x * CHANNELS;
-    let mut ptr = frame.as_mut_ptr();
-    unsafe {
-        ptr = ptr.add(offset);
-        for i in 0..CHANNELS {
-            (*ptr) = colors[i];
-            ptr = ptr.add(1);
-        }
-    }
-}
-
-pub fn draw_pixel_slide(
+pub fn draw_pixel(
     pixels: &mut Pixels,
     position: &Vec2<usize>,
     colors: &[u8],

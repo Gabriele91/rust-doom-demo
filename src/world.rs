@@ -1,12 +1,29 @@
 #![allow(dead_code)]
 // Using, d3d
-use crate::consts;
 use crate::math::Vec2;
+
+pub enum Material {
+    Color([u8; 4]),
+    Texture {
+        texture: usize,
+        uv: Vec2<i32>,
+        shade: i32
+    }
+}
+
+impl Material {
+    pub fn color_or<'a>(&'a self, default: &'a [u8; 4]) -> &[u8; 4] {
+        match self {
+            Material::Color(color) => color,
+            _ => default
+        }
+    }
+}
 
 pub struct Wall {
     pub point1: Vec2<i32>,
     pub point2: Vec2<i32>,
-    pub color: [u8; 4],
+    pub material: Material,
 }
 
 impl Wall {
@@ -14,7 +31,7 @@ impl Wall {
         Wall {
             point1: point1.clone(),
             point2: point2.clone(),
-            color: [0x0, 0x0, 0x0, 0x0],
+            material: Material::Color([0xff, 0xff, 0xff, 0xff]),
         }
     }
 }
@@ -24,10 +41,7 @@ pub struct Sector {
     pub height: Vec2<i32>,
     pub colors: [[u8; 4]; 2],
     pub center: Vec2<i32>,
-    // Draw stuff
-    pub surface_shape: [i32; consts::WIDTH as usize],
-    pub surface_type: i32, //to hold points for surfaces
-    pub distance: i32,     //surface index
+    pub material: [Material; 2]
 }
 
 impl Sector {
@@ -37,9 +51,10 @@ impl Sector {
             height: height.clone(),
             colors: [[0x0, 0x0, 0x0, 0x0], [0x0, 0x0, 0x0, 0x0]],
             center: Vec2::new(0, 0),
-            surface_shape: [0; consts::WIDTH as usize],
-            surface_type: 0,
-            distance: 0,
+            material: [
+                Material::Color([0xff,0xff,0xff,0xff]),
+                Material::Color([0xff,0xff,0xff,0xff])
+            ]
         }
     }
 
@@ -49,9 +64,10 @@ impl Sector {
             height: height.clone(),
             colors: colors,
             center: Vec2::new(0, 0),
-            surface_shape: [0; consts::WIDTH as usize],
-            surface_type: 0,
-            distance: 0,
+            material: [
+                Material::Color([0xff,0xff,0xff,0xff]),
+                Material::Color([0xff,0xff,0xff,0xff])
+            ]
         }
     }
 }

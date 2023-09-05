@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use pixels::Pixels;
-use crate::windows::draw_pixel_slide;
+use crate::windows::draw_pixel;
 
 // Using, d3d
 use crate::math::Vec2;
@@ -24,8 +24,8 @@ impl Texture {
         return  y * self.row_size() + x * (self.channels as usize);
     }
 
-    pub fn pixel(&self, x: usize, y: usize) -> [u8; 4] {
-        let mut colors:[u8; 4] =[0xff,0xff,0xff,0xff];
+    pub fn fix_pixel<const CHANNELS: usize>(&self, x: usize, y: usize) -> [u8; CHANNELS] {
+        let mut colors:[u8; CHANNELS] =[0xff; CHANNELS];
         let pindex = self.pixel_index(x, y);
         for c in 0..self.channels as usize {
             colors[c] = self.data[pindex+c];
@@ -33,7 +33,7 @@ impl Texture {
         return colors;
     }
 
-    pub fn ref_pixel(&self, x: usize, y: usize) -> &[u8] {
+    pub fn pixel(&self, x: usize, y: usize) -> &[u8] {
         let index = self.pixel_index(x, y);
         let end_index = index + self.channels as usize;
         &self.data[index..end_index]
@@ -42,7 +42,7 @@ impl Texture {
     pub fn draw(&self, mut pixels: &mut Pixels) {
         for y in 0..self.dimensions.y {
             for x in 0..self.dimensions.x {
-                draw_pixel_slide(&mut pixels, &Vec2::new(x, y), self.ref_pixel(x, y));
+                draw_pixel(&mut pixels, &Vec2::new(x, y), self.pixel(x, y));
             }
         }
     }
