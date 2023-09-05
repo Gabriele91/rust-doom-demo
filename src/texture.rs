@@ -8,7 +8,6 @@ use crate::tga::decode_tga;
 // Using
 use std::fs;
 
-#[derive(Debug)]
 pub struct Texture {
     pub dimensions: Vec2<usize>,
     pub channels: u8,
@@ -94,7 +93,7 @@ impl TextureSet {
                                         new_texture.channels = format; 
                                         textures.set.push(new_texture) 
                                     },
-                                    2 => print!("{:?} does not supported", &path),
+                                    2 => println!("{:?} does not supported", &path),
                                     _ => {}
                                 }
                             }
