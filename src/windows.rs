@@ -47,7 +47,7 @@ pub fn clear_background(pixels: &mut Pixels, color: [u8; 4]) {
 pub fn draw_pixel(
     pixels: &mut Pixels,
     position: &Vec2<usize>,
-    colors: &[u8],
+    color: &[u8],
 ) {
     let size = pixels.texture().size();
     let channels = pixels.texture().format().block_size(None).unwrap() as usize;
@@ -60,8 +60,8 @@ pub fn draw_pixel(
     let mut ptr = frame.as_mut_ptr();
     unsafe {
         ptr = ptr.add(offset);
-        for color in colors.iter() {
-            (*ptr) = *color;
+        for channel in color.iter() {
+            (*ptr) = *channel;
             ptr = ptr.add(1);
         }
     }

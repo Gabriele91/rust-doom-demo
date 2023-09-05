@@ -2,13 +2,15 @@
 // Using, d3d
 use crate::math::Vec2;
 
+pub struct TextureMapping {
+    pub texture: usize,
+    pub uv: Vec2<i32>,
+    pub shade: i32
+}
+
 pub enum Material {
     Color([u8; 4]),
-    Texture {
-        texture: usize,
-        uv: Vec2<i32>,
-        shade: i32
-    }
+    Texture(TextureMapping)
 }
 
 impl Material {
@@ -32,6 +34,13 @@ impl Wall {
             point1: point1.clone(),
             point2: point2.clone(),
             material: Material::Color([0xff, 0xff, 0xff, 0xff]),
+        }
+    }
+    pub fn new_with_material(point1: &Vec2<i32>, point2: &Vec2<i32>, material: Material) -> Self {
+        Wall {
+            point1: point1.clone(),
+            point2: point2.clone(),
+            material: material,
         }
     }
 }

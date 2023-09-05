@@ -3,8 +3,8 @@ use crate::consts;
 use crate::math::{clamp, Vec2, Vec3};
 use crate::player::Player;
 use crate::windows::draw_pixel;
-use crate::world::{World, Sector};
-
+use crate::world::{World, Sector, Material, TextureMapping};
+use crate::texture::TextureSet;
 // Using
 use std::rc::Rc;
 use pixels::Pixels;
@@ -44,7 +44,8 @@ struct SectorContext {
 }
 
 pub struct Render {
-    world: Rc<World>,
+    pub world: Rc<World>,
+    pub textures: Rc<TextureSet>,
     sectors_context: Vec<SectorContext>
 }
 
@@ -64,7 +65,7 @@ fn clip_behind_player(point1: &mut Vec3<i32>, point2: &Vec3<i32>) {
     }
 }
 
-fn distance_pw2(point1: &Vec2<i32>, point2: &Vec2<i32>) -> i32 {
+fn distance(point1: &Vec2<i32>, point2: &Vec2<i32>) -> i32 {
     let delta = *point1 - *point2;
     let delta_pw2 = delta * delta;
     return delta_pw2.x + delta_pw2.y;
@@ -120,7 +121,7 @@ impl WallProjector {
                                as i32;
         }
         // Distance
-        self.distance = distance_pw2(
+        self.distance = distance(
             &Vec2::new(0, 0),
             &Vec2::new((self.wall[0].x + self.wall[1].x) / 2, (self.wall[0].y + self.wall[1].y) / 2),
         );
@@ -167,33 +168,56 @@ impl WallProjector {
 }
 
 impl Surface {
-    pub fn get_surface_from_backside<'a>(&'a mut self, face: &Face, x: i32, y1: &mut i32, y2: &mut i32, colors: &[&'a [u8; 4]; 3]) -> &[u8; 4] {
+    pub fn draw_surface<'a>(
+        &'a mut self, 
+        mut pixels: &mut Pixels, 
+        face: &Face, 
+        x: i32, 
+        u: f32,
+        mut y1: i32, 
+        mut y2: i32, 
+        mut v: f32,
+        vs: f32,
+        textures: &TextureSet,
+        materials: &[&Material; 3]
+    ) {
+        // Material
+        let mut material = materials[0];
         // Surface
         match face {
             Face::Back => {
                 match self.view {
                     SurfaceView::Top => { 
-                        *y2 = self.points[x as usize];  
-                        colors[1]
-                    }
+                        y2 = self.points[x as usize];  
+                        material = materials[1];
+                    },
                     SurfaceView::Bottom => { 
-                        *y1 = self.points[x as usize];
-                        colors[2] 
-                    }
-                    SurfaceView::Mid => {
-                        colors[0]
-                    }
+                        y1 = self.points[x as usize];
+                        material = materials[2];
+                    },
+                    SurfaceView::Mid => {},
                 }
             },
             Face::Front => {
                 match self.view {
-                    SurfaceView::Top    => { self.points[x as usize] = *y1; } // bottom save to top
-                    SurfaceView::Bottom => { self.points[x as usize] = *y2; } // top save to bottom
-                    SurfaceView::Mid    => {}
+                    SurfaceView::Top    => { self.points[x as usize] = y1; }, // bottom save to top
+                    SurfaceView::Bottom => { self.points[x as usize] = y2; }, // top save to bottom
+                    SurfaceView::Mid    => {},
                 }
-                colors[0]
             }
         }
+
+        for y in y1..y2 {
+            let color = match material {
+                Material::Texture(map) => {
+                    textures.set[map.texture].uv_pixel(u,v)
+                },
+                Material::Color(color) => color
+            };
+            draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), color);
+            v += vs;
+        }
+
     }
 }
 
@@ -228,7 +252,37 @@ impl SectorContext {
         }
     }
 
-    fn draw(&mut self,mut pixels: &mut Pixels, wall_projector: &WallProjector, colors: &[&[u8; 4]; 3]) {
+    fn u_texturing(&self, textures: &TextureSet, x1: i32, x2:i32, map: &TextureMapping) -> (f32, f32){
+        let step =(textures.set[map.texture].dimensions.x as i32 * map.uv.x) as f32 / ((x2-x1) as f32);
+        let start: f32 = { 
+            if x1 < 0 {
+                -step * (x1 as f32)
+            } else {
+                0.0
+            }
+        };
+        return (start,step);
+    }
+
+    fn v_texturing(&self, textures: &TextureSet, y1: i32, y2:i32, map: &TextureMapping) -> (f32, f32){
+        let step = (textures.set[map.texture].dimensions.y as i32 * map.uv.y) as f32 / ((y2-y1) as f32);
+        let start: f32 = { 
+            if y1 < 0 {
+                -step * (y1 as f32)
+            } else {
+                0.0
+            }
+        };
+        return (start,step);
+    }
+
+    fn draw(
+        &mut self, 
+        mut pixels: &mut Pixels, 
+        wall_projector: &WallProjector, 
+        textures: &TextureSet,
+        materials: &[&Material; 3]
+    ) {
         // Wall
         let wall = &wall_projector.wall;
         // y distance of bottom line
@@ -242,6 +296,11 @@ impl SectorContext {
         }
         // Hold initial x1 starting position
         let xs = wall[0].x;
+        // Texture U
+        let (mut u_coord, u_step) = match materials[0] {
+            Material::Texture(map) => self.u_texturing(textures, wall[0].x, wall[1].x, map),
+            _ => (0.0,0.0)
+        };
         // Clip X
         let x1 = clamp(wall[0].x, 0, consts::WIDTH as i32);
         let x2 = clamp(wall[1].x, 0, consts::WIDTH as i32);
@@ -251,25 +310,35 @@ impl SectorContext {
             let mut y1 = ((dyb as f32 * (((x - xs) as f32 + 0.5) / (dx as f32))) + wall[0].y as f32) as i32;
             // From x1 to x, starting from closet point to current top
             let mut y2 = ((dyt as f32 * (((x - xs) as f32 + 0.5) / (dx as f32))) + wall[2].y as f32) as i32;
+            // texture V
+            let (v_coord, v_step)= match materials[0] {
+                Material::Texture(map) => self.v_texturing(textures, y1, y2, map),
+                _ => (0.0,0.0)
+            }; 
             // Clip Y
             y1 = clamp(y1, 0, consts::HEIGHT as i32);
             y2 = clamp(y2, 0, consts::HEIGHT as i32);
-            // Update surface
-            let color = self.surface.get_surface_from_backside(&wall_projector.face, x, &mut y1, &mut y2, &colors);
-            // Draw wall
-            for y in y1..y2 {
-                draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), color);
-            }
+            // Draw
+            self.surface.draw_surface(
+                &mut pixels,
+                &wall_projector.face, 
+                x, u_coord, 
+                y1, y2, v_coord, v_step, 
+                textures, &materials
+            );
+            // Next
+            u_coord += u_step;
         }
     }
 
 }
 
 impl Render {
-    pub fn new(ref_world: Rc<World>) -> Self {
+    pub fn new(world: Rc<World>, textures: Rc<TextureSet>) -> Self {
         Render {
-            world: Rc::clone(&ref_world),
-            sectors_context: (0..ref_world.sectors.len()).map(|i| SectorContext::new(i)).collect(),
+            world: Rc::clone(&world),
+            textures: Rc::clone(&textures),
+            sectors_context: (0..world.sectors.len()).map(|i| SectorContext::new(i)).collect(),
         }
     }
 
@@ -294,12 +363,17 @@ impl Render {
                     wall_projector.project(&player, &face, &[wall.point1, wall.point2], &sector.height);
                     // Draw
                     if wall_projector.visiable {
-                        let colors = [
-                            wall.material.color_or(&[0xff; 4]),
-                            sector.material[0].color_or(&[0xff; 4]),
-                            sector.material[1].color_or(&[0xff; 4]),
+                        let materials = [
+                            &wall.material,
+                            &sector.material[0],
+                            &sector.material[1],
                         ];
-                        context.draw(&mut pixels, &wall_projector, &colors);
+                        context.draw(
+                            &mut pixels,
+                            &wall_projector, 
+                            self.textures.as_ref(),
+                            &materials
+                        );
                     }
                     // Add distance
                     context.distance += wall_projector.distance;

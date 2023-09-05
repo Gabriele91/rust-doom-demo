@@ -1,12 +1,12 @@
 #![allow(dead_code)]
-use pixels::Pixels;
 use crate::windows::draw_pixel;
+use pixels::Pixels;
 
 // Using, d3d
 use crate::math::Vec2;
 use crate::tga::decode_tga;
 // Using
-use std::fs;
+use std::fs::{self, DirEntry, ReadDir};
 
 pub struct Texture {
     pub dimensions: Vec2<usize>,
@@ -15,26 +15,33 @@ pub struct Texture {
 }
 
 impl Texture {
-    
     pub fn row_size(&self) -> usize {
         self.dimensions.x * (self.channels as usize)
     }
 
     pub fn pixel_index(&self, x: usize, y: usize) -> usize {
-        return  y * self.row_size() + x * (self.channels as usize);
+        return y * self.row_size() + x * (self.channels as usize);
     }
 
     pub fn fix_pixel<const CHANNELS: usize>(&self, x: usize, y: usize) -> [u8; CHANNELS] {
-        let mut colors:[u8; CHANNELS] =[0xff; CHANNELS];
+        let mut colors: [u8; CHANNELS] = [0xff; CHANNELS];
         let pindex = self.pixel_index(x, y);
         for c in 0..self.channels as usize {
-            colors[c] = self.data[pindex+c];
+            colors[c] = self.data[pindex + c];
         }
         return colors;
     }
 
     pub fn pixel(&self, x: usize, y: usize) -> &[u8] {
         let index = self.pixel_index(x, y);
+        let end_index = index + self.channels as usize;
+        &self.data[index..end_index]
+    }
+
+    pub fn uv_pixel(&self, mut u: f32, mut v: f32) -> &[u8] {
+        u %= self.dimensions.x as f32;
+        v  = (self.dimensions.y as f32 - v - 1.0) % self.dimensions.y as f32;
+        let index = self.pixel_index(u as usize, v as usize);
         let end_index = index + self.channels as usize;
         &self.data[index..end_index]
     }
@@ -46,56 +53,57 @@ impl Texture {
             }
         }
     }
-
 }
 
 pub struct TextureSet {
     pub set: Vec<Texture>,
 }
 
-impl TextureSet {
+fn sort_paths(entries: ReadDir) -> Vec<DirEntry> {
+    let mut paths: Vec<DirEntry> = entries.map(|r| r.unwrap()).collect();
+    paths.sort_by_key(|dir| dir.path());
+    return paths;
+}
 
+impl TextureSet {
     fn new() -> Self {
-        TextureSet { 
-            set: vec![] 
-        }
+        TextureSet { set: vec![] }
     }
 
     pub fn from(path: &str) -> Option<Self> {
         if let Ok(entries) = fs::read_dir(path) {
             // Create set
             let mut textures = TextureSet::new();
+            // Sort
+            let vec_entries = sort_paths(entries);
             // Read all
-            for res_entry in entries {
-                if let Ok(entry) = res_entry {
-                    let path = entry.path();
-                    if let Some(extension) = path.extension() {
-                        if extension == "tga" {
-                            let raw_data = fs::read(&path).unwrap();
-                            let mut new_texture = Texture {
-                                dimensions: Vec2 { x: 0, y: 0 },
-                                channels: 0,
-                                data: vec![],
-                            };
-                            let mut format: u8 = 0;
-                            let mut colors: u8 = 0;
-                            if decode_tga(
-                                &mut new_texture.data,
-                                &mut new_texture.dimensions.x,
-                                &mut new_texture.dimensions.y,
-                                &mut format,
-                                &mut colors,
-                                &raw_data.as_slice(),
-                            ) {
-
-                                match format {
-                                    1 | 3 | 4 => { 
-                                        new_texture.channels = format; 
-                                        textures.set.push(new_texture) 
-                                    },
-                                    2 => println!("{:?} does not supported", &path),
-                                    _ => {}
+            for entry in vec_entries {
+                let path = entry.path();
+                if let Some(extension) = path.extension() {
+                    if extension == "tga" {
+                        let raw_data = fs::read(&path).unwrap();
+                        let mut new_texture = Texture {
+                            dimensions: Vec2 { x: 0, y: 0 },
+                            channels: 0,
+                            data: vec![],
+                        };
+                        let mut format: u8 = 0;
+                        let mut colors: u8 = 0;
+                        if decode_tga(
+                            &mut new_texture.data,
+                            &mut new_texture.dimensions.x,
+                            &mut new_texture.dimensions.y,
+                            &mut format,
+                            &mut colors,
+                            &raw_data.as_slice(),
+                        ) {
+                            match format {
+                                1 | 3 | 4 => {
+                                    new_texture.channels = format;
+                                    textures.set.push(new_texture)
                                 }
+                                2 => println!("{:?} does not supported", &path),
+                                _ => {}
                             }
                         }
                     }

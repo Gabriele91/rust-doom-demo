@@ -2,7 +2,7 @@
 // Using, d3d
 use crate::math::{Vec2, Vec3};
 use crate::player::Player;
-use crate::world::{Sector, Wall, World};
+use crate::world::{Material, TextureMapping, Sector, Wall, World};
 // Usings
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -63,10 +63,27 @@ impl Map {
                 if numbers.len() < 4 {
                     return None;
                 }
-                walls.push(Wall::new(
-                    &Vec2::new(numbers[0], numbers[1]),
-                    &Vec2::new(numbers[2], numbers[3]),
-                ));
+                let wall: Wall =  match numbers.len() {
+                    7 => Wall::new_with_material(
+                        &Vec2::new(numbers[0], numbers[1]),
+                        &Vec2::new(numbers[2], numbers[3]),
+                        Material::Color([numbers[4] as u8,numbers[5] as u8,numbers[6] as u8, 0xff])
+                    ),
+                    8 => Wall::new_with_material(
+                        &Vec2::new(numbers[0], numbers[1]),
+                        &Vec2::new(numbers[2], numbers[3]),
+                        Material::Texture(TextureMapping {
+                            texture: numbers[4] as usize, 
+                            uv: Vec2::new(numbers[5], numbers[6]),
+                            shade: numbers[7]
+                        })
+                    ),
+                    _ => Wall::new(
+                        &Vec2::new(numbers[0], numbers[1]),
+                        &Vec2::new(numbers[2], numbers[3]),
+                    )
+                };
+                walls.push(wall);
             }
             // Build world
             let world = Rc::new(World {

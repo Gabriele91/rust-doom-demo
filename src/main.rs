@@ -20,6 +20,7 @@ use winit::{
 };
 use winit_input_helper::WinitInputHelper;
 use clap::{Command, Arg, ArgMatches};
+use std::rc::Rc;
 
 fn shell_args() -> ArgMatches {
     Command::new("Rust-doom-demo")
@@ -48,7 +49,7 @@ fn main() {
         _ => panic!("Unable to load map {:?}", map_path),
     };
     let texset = match TextureSet::from(textures_path) {
-        Some(texset) => texset,
+        Some(texset) => Rc::new(texset),
         _ => panic!("Unable to load textures {:?}", textures_path),
     };
     
@@ -69,7 +70,7 @@ fn main() {
     let mut pixels = windows::pixes_from_size(&window, consts::WIDTH, consts::HEIGHT).unwrap();
 
     // Render
-    let mut render = Render::new(map.world);
+    let mut render = Render::new(map.world, texset);
 
     // Main loop
     event_loop.run(
