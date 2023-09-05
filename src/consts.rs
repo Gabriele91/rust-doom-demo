@@ -16,7 +16,7 @@ pub const H_HEIGHT : u32 = HEIGHT / 2;
 pub const BACKGROUND_COLOR: [u8; 4] = [0x22,0x22,0xff,0xff];
 
 // Player
-pub const MOVE_VELOCITY : i32 = 1;
+pub const MOVE_VELOCITY : i32 = 2;
 pub const ROTATION_VELOCITY : i32 = 1;
 pub const UPDOWN_VELOCITY : i32 = 1;
 

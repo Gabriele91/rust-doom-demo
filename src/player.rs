@@ -56,7 +56,13 @@ impl Player {
         self.updown -= UPDOWN_VELOCITY;
     }
 
-    pub fn execute_input(&mut self, _event: &Event<'_, ()>,input: &WinitInputHelper) {
+    pub fn dirmove(&mut self, xydir: Vec3<i32>) {
+        let x = self.cos() * (xydir.x as f32) + self.sin() * (xydir.y as f32);
+        let y =-self.sin() * (xydir.x as f32) + self.cos() * (xydir.y as f32);
+        self.position = self.position + Vec3::new(x as i32,y as i32, xydir.z);
+    }
+    
+    pub fn execute_input_standard(&mut self, _event: &Event<'_, ()>,input: &WinitInputHelper) {
         if  input.key_held(VirtualKeyCode::W) 
         && !input.key_held(VirtualKeyCode::S) {
             self.position = self.position + Vec3::new(0,MOVE_VELOCITY,0);
@@ -72,6 +78,49 @@ impl Player {
         if !input.key_held(VirtualKeyCode::A) 
         &&  input.key_held(VirtualKeyCode::D) {
             self.position = self.position + Vec3::new(MOVE_VELOCITY,0,0);
+        }
+        if  input.key_held(VirtualKeyCode::R) 
+        && !input.key_held(VirtualKeyCode::F) {
+            self.position = self.position + Vec3::new(0,0,-MOVE_VELOCITY);
+        }
+        if !input.key_held(VirtualKeyCode::R) 
+        &&  input.key_held(VirtualKeyCode::F) {
+            self.position = self.position + Vec3::new(0,0,MOVE_VELOCITY);
+        }
+        if  input.key_held(VirtualKeyCode::Left) 
+        && !input.key_held(VirtualKeyCode::Right) {
+            self.left();
+        }
+        if !input.key_held(VirtualKeyCode::Left) 
+        &&  input.key_held(VirtualKeyCode::Right) {
+            self.right();
+        }
+        if  input.key_held(VirtualKeyCode::Up) 
+        && !input.key_held(VirtualKeyCode::Down) {
+            self.up();
+        }
+        if !input.key_held(VirtualKeyCode::Up) 
+        &&  input.key_held(VirtualKeyCode::Down) {
+            self.down();
+        }
+    }
+
+    pub fn execute_input_classic(&mut self, _event: &Event<'_, ()>,input: &WinitInputHelper) {
+        if  input.key_held(VirtualKeyCode::W) 
+        && !input.key_held(VirtualKeyCode::S) {
+            self.dirmove(Vec3::new(0,MOVE_VELOCITY,0));
+        }
+        if !input.key_held(VirtualKeyCode::W) 
+        &&  input.key_held(VirtualKeyCode::S) {
+            self.dirmove(Vec3::new(0,-MOVE_VELOCITY,0));
+        }        
+        if  input.key_held(VirtualKeyCode::A) 
+        && !input.key_held(VirtualKeyCode::D) {
+            self.dirmove(Vec3::new(-MOVE_VELOCITY,0,0));
+        }
+        if !input.key_held(VirtualKeyCode::A) 
+        &&  input.key_held(VirtualKeyCode::D) {
+            self.dirmove(Vec3::new(MOVE_VELOCITY,0,0));
         }
         if  input.key_held(VirtualKeyCode::R) 
         && !input.key_held(VirtualKeyCode::F) {

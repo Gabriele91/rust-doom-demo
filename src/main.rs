@@ -19,7 +19,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 use winit_input_helper::WinitInputHelper;
-use clap::{Command, Arg, ArgMatches};
+use clap::{Command, Arg, ArgMatches, ArgAction};
 use std::rc::Rc;
 
 fn shell_args() -> ArgMatches {
@@ -37,11 +37,18 @@ fn shell_args() -> ArgMatches {
         .long("textures")
         .required(true)
         .help("Textures path"))
+    .arg(Arg::new("classic")
+        .short('c')
+        .short("classic")
+        .required(false)
+        .action(ArgAction::SetTrue)
+        .help("Enable classic controller"))
     .get_matches()
 }
 
 fn main() {
     let matches = shell_args();
+    let classic = matches.get_flag("classic");
     let map_path = matches.get_one::<String>("map").unwrap();
     let textures_path = matches.get_one::<String>("textures").unwrap();
     let map =  match  Map::from(map_path) {
@@ -52,7 +59,7 @@ fn main() {
         Some(texset) => Rc::new(texset),
         _ => panic!("Unable to load textures {:?}", textures_path),
     };
-    
+    println!("classic: {}", classic);
     // Inputs
     let mut input: WinitInputHelper = WinitInputHelper::new();
     let event_loop = EventLoop::new();
@@ -96,8 +103,12 @@ fn main() {
                             *control_flow = ControlFlow::Exit;
                             return;
                         }
-                        // Player
-                        player.execute_input(&event, &input);
+                        // Player inputs
+                        if classic {
+                            player.execute_input_classic(&event, &input);
+                        } else {
+                            player.execute_input_standard(&event, &input)
+                        }
                         // Draw
                         window.request_redraw();
                     }
