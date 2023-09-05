@@ -5,10 +5,14 @@ mod player;
 mod render;
 mod windows;
 mod map;
-// Using d3d
+mod tga;
+mod texture;
+
+// Using d3
+use crate::map::Map;
 use crate::player::Player;
 use crate::render::Render;
-use crate::map::Map;
+use crate::texture::TextureSet;
 // Using
 use winit::{
     event::{Event, VirtualKeyCode},
@@ -27,15 +31,25 @@ fn shell_args() -> ArgMatches {
         .long("map")
         .required(true)
         .help("Map path"))
+    .arg(Arg::new("textures")
+        .short('t')
+        .long("textures")
+        .required(true)
+        .help("Textures path"))
     .get_matches()
 }
 
 fn main() {
     let matches = shell_args();
     let map_path = matches.get_one::<String>("map").unwrap();
+    let textures_path = matches.get_one::<String>("textures").unwrap();
     let map =  match  Map::from(map_path) {
         Some(map) => map,
         _ => panic!("Unable to load map {:?}", map_path),
+    };
+    let texset = match TextureSet::from(textures_path) {
+        Some(texset) => texset,
+        _ => panic!("Unable to load textures {:?}", textures_path),
     };
     
     // Inputs

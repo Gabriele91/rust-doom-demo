@@ -260,7 +260,7 @@ impl SectorContext {
             let color = self.surface.get_surface_from_backside(&wall_projector.face, x, &mut y1, &mut y2, &color_set);
             // Draw wall
             for y in y1..y2 {
-                draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), *color);
+                draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), &color);
             }
         }
     }
