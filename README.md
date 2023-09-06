@@ -24,7 +24,7 @@ Follow these steps to get started with this project:
 2. Build and run the Rust Doom renderer:
 
    ```bash
-   cargo run
+   cargo run --relase -- --textures assets/textures --map box.map
    ```
 
 ## Usage
@@ -38,7 +38,13 @@ To run the Rust Doom renderer, use the following commands:
   - F: Descend.
   - Arrow keys: Change the view direction.
 
+## Examples
+
+3D map without texture:
 ![Example](https://github.com/Gabriele91/rust-doom-demo/blob/main/doc/screenshot.png?raw=true)
+
+3D map with texture:
+![Example](https://github.com/Gabriele91/rust-doom-demo/blob/main/doc/screenshot_texture.png?raw=true)
 
 ## Contributing
 
