@@ -39,7 +39,7 @@ fn shell_args() -> ArgMatches {
         .help("Textures path"))
     .arg(Arg::new("classic")
         .short('c')
-        .short("classic")
+        .long("classic")
         .required(false)
         .action(ArgAction::SetTrue)
         .help("Enable classic controller"))
