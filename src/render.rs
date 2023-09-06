@@ -52,16 +52,16 @@ pub struct Render {
 fn clip_behind_player(point1: &mut Vec3<i32>, point2: &Vec3<i32>) {
     let da = point1.y as f32;
     let db = point2.y as f32;
-    let mut d = da - db;
+    let d = da - db;
     if d == 0.0 {
-        d = 1.0;
-    }
-    let s = da / d;
-    point1.x += (s * (point2.x - point1.x) as f32) as i32;
-    point1.y += (s * (point2.y - point1.y) as f32) as i32;
-    point1.z += (s * (point2.z - point1.z) as f32) as i32;
-    if point1.y == 0 {
-        point1.y = 1;
+        if (*point1).y == 0 { (*point1).y = 1; }
+    } else {
+        let s = da / d;
+        let dv3 = *point2 - *point1;
+        (*point1).x = ((*point1).x as f32 + (s * (dv3.x as f32))) as i32;
+        (*point1).y = ((*point1).y as f32 + (s * (dv3.y as f32))) as i32;
+        (*point1).z = ((*point1).z as f32 + (s * (dv3.z as f32))) as i32;
+        if (*point1).y == 0 { (*point1).y = 1; }
     }
 }
 
@@ -168,7 +168,7 @@ impl WallProjector {
 }
 
 impl Surface {
-    pub fn draw_surface<'a>(
+    pub fn draw<'a>(
         &'a mut self, 
         mut pixels: &mut Pixels, 
         face: &Face, 
@@ -255,25 +255,13 @@ impl SectorContext {
 
     fn u_texturing(&self, textures: &TextureSet, x1: i32, x2:i32, map: &TextureMapping) -> (f32, f32){
         let step =(textures.set[map.texture].dimensions.x as i32 * map.uv.x) as f32 / ((x2-x1) as f32);
-        let start: f32 = { 
-            if x1 < 0 {
-                -step * (x1 as f32)
-            } else {
-                0.0
-            }
-        };
+        let start: f32 = if x1 < 0 { -step * (x1 as f32) } else { 0.0 };
         return (start,step);
     }
 
     fn v_texturing(&self, textures: &TextureSet, y1: i32, y2:i32, map: &TextureMapping) -> (f32, f32){
         let step = (textures.set[map.texture].dimensions.y as i32 * map.uv.y) as f32 / ((y2-y1) as f32);
-        let start: f32 = { 
-            if y1 < 0 {
-                -step * (y1 as f32)
-            } else {
-                0.0
-            }
-        };
+        let start: f32 = if y1 < 0 { -step * y1 as f32 } else { 0.0 };
         return (start,step);
     }
 
@@ -291,10 +279,7 @@ impl SectorContext {
         // y distance of top line
         let dyt = wall_projector.distance_top_line();
         // x distance
-        let mut dx = wall_projector.large();
-        if dx == 0 {
-            dx = 1;
-        }
+        let dx: i32 = wall_projector.large(); if dx == 0 { return; }
         // Hold initial x1 starting position
         let xs = wall[0].x;
         // Texture U
@@ -308,10 +293,10 @@ impl SectorContext {
         // Draw line
         for x in x1..x2 {
             // From x1 to x, starting from closet point to current bottom
-            let mut y1 = ((dyb as f32 * (((x - xs) as f32 + 0.5) / (dx as f32))) + wall[0].y as f32) as i32;
+            let mut y1: i32 = dyb * (((x - xs) as f32 + 0.5) as i32) / dx + wall[0].y;
             // From x1 to x, starting from closet point to current top
-            let mut y2 = ((dyt as f32 * (((x - xs) as f32 + 0.5) / (dx as f32))) + wall[2].y as f32) as i32;
-            // texture V
+            let mut y2: i32 = dyt * (((x - xs) as f32 + 0.5) as i32) / dx + wall[2].y;
+            // texture: i32 V
             let (v_coord, v_step)= match materials[0] {
                 Material::Texture(map) => self.v_texturing(textures, y1, y2, map),
                 _ => (0.0,0.0)
@@ -320,7 +305,7 @@ impl SectorContext {
             y1 = clamp(y1, 0, consts::HEIGHT as i32);
             y2 = clamp(y2, 0, consts::HEIGHT as i32);
             // Draw
-            self.surface.draw_surface(
+            self.surface.draw(
                 &mut pixels,
                 &wall_projector.face, 
                 x, u_coord, 
