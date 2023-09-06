@@ -208,13 +208,14 @@ impl Surface {
         }
 
         for y in y1..y2 {
-            let color = match material {
+            let colors = match material {
                 Material::Texture(map) => {
-                    textures.set[map.texture].uv_pixel(u,v)
+                    let colors_slice = &textures.set[map.texture].uv_pixel_shade(u, v, map.shade);
+                    [colors_slice[0],colors_slice[1],colors_slice[2],colors_slice[3]]
                 },
-                Material::Color(color) => color
+                Material::Color(color) => *color
             };
-            draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), color);
+            draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), &colors);
             v += vs;
         }
 

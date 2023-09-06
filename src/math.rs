@@ -106,6 +106,13 @@ pub fn clamp<T : std::cmp::PartialOrd>(value:T,min:T,max:T) -> T {
    return value;
 }
 
+pub fn no_negative<T : std::cmp::PartialOrd + Default>(value:T) -> T {
+    if value < T::default() {
+        return T::default();
+    }
+   return value;
+}
+
 pub static SIN: [f32; 360] = [
     0.0,
     0.01745240643728351,

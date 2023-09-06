@@ -5,7 +5,7 @@ use crate::math::Vec2;
 pub struct TextureMapping {
     pub texture: usize,
     pub uv: Vec2<i32>,
-    pub shade: i32
+    pub shade: u8
 }
 
 pub enum Material {

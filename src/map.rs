@@ -75,7 +75,7 @@ impl Map {
                         Material::Texture(TextureMapping {
                             texture: numbers[4] as usize, 
                             uv: Vec2::new(numbers[5], numbers[6]),
-                            shade: numbers[7]
+                            shade: numbers[7] as u8
                         })
                     ),
                     _ => Wall::new(
