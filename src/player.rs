@@ -49,11 +49,11 @@ impl Player {
     }
 
     pub fn up(&mut self) {
-        self.updown += UPDOWN_VELOCITY;
+        self.updown -= UPDOWN_VELOCITY;
     }
 
     pub fn down(&mut self) {
-        self.updown -= UPDOWN_VELOCITY;
+        self.updown += UPDOWN_VELOCITY;
     }
 
     pub fn dirmove(&mut self, xydir: Vec3<i32>) {
@@ -81,11 +81,11 @@ impl Player {
         }
         if  input.key_held(VirtualKeyCode::R) 
         && !input.key_held(VirtualKeyCode::F) {
-            self.position = self.position + Vec3::new(0,0,-MOVE_VELOCITY);
+            self.position = self.position + Vec3::new(0,0,MOVE_VELOCITY);
         }
         if !input.key_held(VirtualKeyCode::R) 
         &&  input.key_held(VirtualKeyCode::F) {
-            self.position = self.position + Vec3::new(0,0,MOVE_VELOCITY);
+            self.position = self.position + Vec3::new(0,0,-MOVE_VELOCITY);
         }
         if  input.key_held(VirtualKeyCode::Left) 
         && !input.key_held(VirtualKeyCode::Right) {
@@ -124,11 +124,11 @@ impl Player {
         }
         if  input.key_held(VirtualKeyCode::R) 
         && !input.key_held(VirtualKeyCode::F) {
-            self.position = self.position + Vec3::new(0,0,-MOVE_VELOCITY);
+            self.position = self.position + Vec3::new(0,0,MOVE_VELOCITY);
         }
         if !input.key_held(VirtualKeyCode::R) 
         &&  input.key_held(VirtualKeyCode::F) {
-            self.position = self.position + Vec3::new(0,0,MOVE_VELOCITY);
+            self.position = self.position + Vec3::new(0,0,-MOVE_VELOCITY);
         }
         if  input.key_held(VirtualKeyCode::Left) 
         && !input.key_held(VirtualKeyCode::Right) {

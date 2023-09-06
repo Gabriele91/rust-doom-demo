@@ -56,7 +56,7 @@ pub fn draw_pixel(
     }
     let frame = pixels.frame_mut();
     let row_size = (size.width as usize) * channels; // 4 colors per byte
-    let offset: usize = position.y * row_size + position.x * channels;
+    let offset: usize = (size.height as usize - position.y) * row_size + position.x * channels;
     let mut ptr = frame.as_mut_ptr();
     unsafe {
         ptr = ptr.add(offset);

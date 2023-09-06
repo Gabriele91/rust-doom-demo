@@ -40,7 +40,7 @@ impl Texture {
 
     pub fn uv_pixel(&self, mut u: f32, mut v: f32) -> &[u8] {
         u %= self.dimensions.x as f32;
-        v  = self.dimensions.y as f32 - (v % self.dimensions.y as f32) - 1.0;
+        v %= self.dimensions.y as f32;
         let index = self.pixel_index(u as usize, v as usize);
         let end_index = index + self.channels as usize;
         &self.data[index..end_index]
@@ -48,7 +48,7 @@ impl Texture {
     
     pub fn uv_pixel_shade(&self, mut u: f32, mut v: f32, shade: u8) -> [u8; 4] {
         u %= self.dimensions.x as f32;
-        v  = self.dimensions.y as f32 - (v % self.dimensions.y as f32) - 1.0;
+        v %= self.dimensions.y as f32;
         let index = self.pixel_index(u as usize, v as usize);
         match self.channels {
             1 => [no_negative(self.data[index + 0] as i32 - shade as i32) as u8,
