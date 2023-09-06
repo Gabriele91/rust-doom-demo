@@ -94,8 +94,10 @@ impl Surface {
         let mut z = y as f32 + look_updown; if z == 0.0 { z = 0.0001; }
         let fx = (x as f32) / z * move_updown * tile;
         let fy = (consts::FOV as f32) / z * move_updown * tile;
-        let mut rx = fx * player.sin() - fy * player.cos() + ((player.position.y as f32)/(yo as f32) * tile); 
-        let mut ry: f32 = fx * player.cos() + fy * player.sin() - ((player.position.x as f32)/(yo as f32) * tile); 
+        let psin = player.sin();
+        let pcos = player.cos();
+        let mut rx = fx * psin - fy * pcos + ((player.position.y as f32)/(yo as f32) * tile); 
+        let mut ry: f32 = fx * pcos + fy * psin - ((player.position.x as f32)/(yo as f32) * tile); 
         if rx < 0.0 { rx=-rx+1.0; }
         if ry < 0.0 { ry=-ry+1.0; }
         return (rx,ry);
