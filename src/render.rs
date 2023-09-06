@@ -50,22 +50,6 @@ pub struct Render {
     sectors_context: Vec<SectorContext>
 }
 
-fn clip_behind_player(point1: &mut Vec3<i32>, point2: &Vec3<i32>) {
-    let da = point1.y as f32;
-    let db = point2.y as f32;
-    let d = da - db;
-    if d == 0.0 {
-        if (*point1).y == 0 { (*point1).y = 1; }
-    } else {
-        let s = da / d;
-        let dv3 = *point2 - *point1;
-        (*point1).x = ((*point1).x as f32 + (s * (dv3.x as f32))) as i32;
-        (*point1).y = ((*point1).y as f32 + (s * (dv3.y as f32))) as i32;
-        (*point1).z = ((*point1).z as f32 + (s * (dv3.z as f32))) as i32;
-        if (*point1).y == 0 { (*point1).y = 1; }
-    }
-}
-
 fn distance(point1: &Vec2<i32>, point2: &Vec2<i32>) -> i32 {
     let delta = *point1 - *point2;
     let delta_pw2 = delta * delta;
@@ -198,7 +182,7 @@ impl WallContext {
         }
     }
 
-    fn draw(
+    pub fn draw(
         &mut self, 
         mut pixels: &mut Pixels, 
         surface: &mut Surface, 
@@ -303,17 +287,13 @@ impl WallContext {
         }
         // Point 1 behind player, clip
         else if self.wall[0].y < 1 {
-            let wall_1 = self.wall[1].clone();
-            clip_behind_player(&mut self.wall[0], &wall_1); // bottom line
-            let wall_3 = self.wall[3].clone();
-            clip_behind_player(&mut self.wall[2], &wall_3); // top line
+            self.clip_behind_player(0,1); // bottom line
+            self.clip_behind_player(2,3); // top line
         }
         // Point 2 behind player, clip
         else if self.wall[1].y < 1 {
-            let wall_0 = self.wall[0].clone();
-            clip_behind_player(&mut self.wall[1], &wall_0); // bottom line
-            let wall_2 = self.wall[2].clone();
-            clip_behind_player(&mut self.wall[3], &wall_2); // top line
+            self.clip_behind_player(1, 0); // bottom line
+            self.clip_behind_player(3,2); // top line
         }
         // Screen position
         for i in 0..4 {
@@ -322,6 +302,24 @@ impl WallContext {
         }
         // Draw
         self.visiable = true;
+    }
+
+    fn clip_behind_player(&mut self, p1: usize, p2: usize) {
+        let point2: Vec3<i32> = self.wall[p2].clone();
+        let point1: &mut Vec3<i32> = &mut self.wall[p1];
+        let da = point1.y as f32;
+        let db = point2.y as f32;
+        let d = da - db;
+        if d == 0.0 {
+            if (*point1).y == 0 { point1.y = 1; }
+        } else {
+            let s = da / d ;
+            let dv3: Vec3<i32> = point2 - *point1;
+            point1.x = (point1.x as f32 + (s * (dv3.x as f32))) as i32;
+            point1.y = (point1.y as f32 + (s * (dv3.y as f32))) as i32;
+            point1.z = (point1.z as f32 + (s * (dv3.z as f32))) as i32;
+            if (*point1).y == 0 { point1.y = 1; }
+        }
     }
 
     fn distance_bottom_line(&self) -> i32 {
@@ -344,7 +342,7 @@ impl WallContext {
 
     fn v_texturing(&self, textures: &TextureSet, y1: i32, y2:i32, map: &TextureMapping) -> (f32, f32){
         let step = (textures.set[map.texture].dimensions.y as i32 * map.uv.y) as f32 / ((y2-y1) as f32);
-        let start: f32 = if y1 < 0 { -step * y1 as f32 } else { 0.0 };
+        let start: f32 = if y1 < 0 { -step * (y1 as f32) } else { 0.0 };
         return (start,step);
     }
 
