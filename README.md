@@ -24,7 +24,7 @@ Follow these steps to get started with this project:
 2. Build and run the Rust Doom renderer:
 
    ```bash
-   cargo run --relase -- --textures assets/textures --map box.map
+   cargo run --release  -- --textures assets/textures --map assets/box.map
    ```
 
 ## Usage
