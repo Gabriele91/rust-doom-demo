@@ -14,6 +14,7 @@ pub const SCREE_HEIGHT: u32 = HEIGHT * SCREEN_RESOLUTION;
 pub const H_WIDTH : u32 = WIDTH / 2;
 pub const H_HEIGHT : u32 = HEIGHT / 2;
 pub const BACKGROUND_COLOR: [u8; 4] = [0x22,0x22,0xff,0xff];
+pub const PLANE_TILE_FACTOR: f32 = 1.0 / 4.0; 
 
 // Player
 pub const MOVE_VELOCITY : i32 = 2;

@@ -233,7 +233,10 @@ impl Surface {
                 // tiling
                 let tile = match material {
                      Material::Texture(map) => {
-                        map.uv.x as f32 * textures.set[map.texture].dimensions.x as f32 * (consts::RESOLUTION as f32)
+                        map.uv.x as f32 
+                        * textures.set[map.texture].dimensions.x as f32 
+                        * (consts::RESOLUTION as f32) 
+                        * consts::PLANE_TILE_FACTOR
                     },
                      _ => 1.0
                 };
