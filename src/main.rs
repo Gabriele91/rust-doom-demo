@@ -59,7 +59,6 @@ fn main() {
         Some(texset) => Rc::new(texset),
         _ => panic!("Unable to load textures {:?}", textures_path),
     };
-    println!("classic: {}", classic);
     // Inputs
     let mut input: WinitInputHelper = WinitInputHelper::new();
     let event_loop = EventLoop::new();
