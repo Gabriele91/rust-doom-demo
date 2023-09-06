@@ -9,7 +9,7 @@
                 "args": [
                     "build",
                     "--bin=rust-doom-demo",
-                    "--package=rust-doom-demo"
+                    "--package=rust-doom-demo",
                 ],
                 "filter": {
                     "name": "rust-doom-demo",
@@ -17,6 +17,10 @@
                 }
             },
             "args": [
+                "--textures",
+                "assets/textures",
+                "--map",
+                "assets/box.map"
             ],
             "cwd": "${workspaceFolder}"
         }
