@@ -34,6 +34,7 @@ struct WallProjector {
 struct Surface {
     points: Vec<i32>,
     view: SurfaceView,
+    wall_offset: i32,
 }
 
 #[derive(Clone)]
@@ -168,9 +169,38 @@ impl WallProjector {
 }
 
 impl Surface {
+
+    fn look_and_move_updown(&self, player: &Player) -> (f32, f32) {
+        // Looks up and down factor
+        let factor = (consts::FOV as f32) / (consts::UPDOWN_FACTOR as f32) - 0.1;
+        // Start
+        let look_updown = -(player.updown as f32) * factor;    
+        // Move
+        let mut move_updown = (player.position.z - self.wall_offset) as f32 / (consts::H_HEIGHT as f32); 
+        if move_updown == 0.0 { move_updown = 0.001; }
+        // Return 
+        return (look_updown, move_updown);
+    }
+
+    fn plane_uv(&self, player: &Player, mut x:i32 , mut y:i32 , look_updown: f32, move_updown: f32, tile: f32) -> (f32, f32) {
+        let xo = consts::H_WIDTH as i32;
+        let yo = consts::H_HEIGHT as i32;
+        x -= xo;
+        y -= yo;
+        let mut z = y as f32 + look_updown; if z == 0.0 { z = 0.0001; }
+        let fx = (x as f32) / z * move_updown * tile;
+        let fy = (consts::FOV as f32) / z * move_updown * tile;
+        let mut rx = fx * player.sin() - fy * player.cos() + ((player.position.y as f32)/(yo as f32) * tile); 
+        let mut ry: f32 = fx * player.cos() + fy * player.sin() - ((player.position.x as f32)/(yo as f32) * tile); 
+        if rx < 0.0 { rx=-rx+1.0; }
+        if ry < 0.0 { ry=-ry+1.0; }
+        return (rx,ry);
+    }
+
     pub fn draw<'a>(
         &'a mut self, 
-        mut pixels: &mut Pixels, 
+        mut pixels: &mut Pixels,
+        player: &Player,
         face: &Face, 
         x: i32, 
         u: f32,
@@ -186,6 +216,7 @@ impl Surface {
         // Surface
         match face {
             Face::Back => {
+                // Cases
                 match self.view {
                     SurfaceView::Top => { 
                         y2 = self.points[x as usize];  
@@ -195,28 +226,53 @@ impl Surface {
                         y1 = self.points[x as usize];
                         material = materials[2];
                     },
-                    SurfaceView::Mid => {},
+                    SurfaceView::Mid => {
+                        return;
+                    },
+                }
+                // tiling
+                let tile = match material {
+                     Material::Texture(map) => {
+                        map.uv.x as f32 * textures.set[map.texture].dimensions.x as f32 * (consts::RESOLUTION as f32)
+                    },
+                     _ => 1.0
+                };
+                // Get look updown
+                let (look_updown, move_updown) = self.look_and_move_updown(&player);
+                // Draw
+                for y in y1..y2 {
+                    // Plane uv
+                    let (pu, pv) = self.plane_uv(&player, x, y, look_updown, move_updown, tile);
+                    // Get color
+                    let colors = match material {
+                        Material::Texture(map) => {
+                            let colors_slice = &textures.set[map.texture].uv_pixel_shade(pu, pv, map.shade);
+                            [colors_slice[0],colors_slice[1],colors_slice[2],colors_slice[3]]
+                        },
+                        Material::Color(color) => *color
+                    };
+                    draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), &colors);
                 }
             },
             Face::Front => {
+                // Cases
                 match self.view {
                     SurfaceView::Top    => { self.points[x as usize] = y1; }, // bottom save to top
                     SurfaceView::Bottom => { self.points[x as usize] = y2; }, // top save to bottom
-                    SurfaceView::Mid    => {},
+                    SurfaceView::Mid    => {  },
+                }
+                for y in y1..y2 {
+                    let colors = match material {
+                        Material::Texture(map) => {
+                            let colors_slice = &textures.set[map.texture].uv_pixel_shade(u, v, map.shade);
+                            [colors_slice[0],colors_slice[1],colors_slice[2],colors_slice[3]]
+                        },
+                        Material::Color(color) => *color
+                    };
+                    draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), &colors);
+                    v += vs;
                 }
             }
-        }
-
-        for y in y1..y2 {
-            let colors = match material {
-                Material::Texture(map) => {
-                    let colors_slice = &textures.set[map.texture].uv_pixel_shade(u, v, map.shade);
-                    [colors_slice[0],colors_slice[1],colors_slice[2],colors_slice[3]]
-                },
-                Material::Color(color) => *color
-            };
-            draw_pixel(&mut pixels, &Vec2::new(x as usize, y as usize), &colors);
-            v += vs;
         }
 
     }
@@ -229,7 +285,8 @@ impl SectorContext {
             index: index,
             surface: Surface {
                 points: vec![0; consts::WIDTH as usize],
-                view: SurfaceView::Mid
+                view: SurfaceView::Mid,
+                wall_offset: 0
             } ,
             distance: 0,
         }
@@ -241,10 +298,12 @@ impl SectorContext {
         // Draw top/mid/bottom
         if position.z < sector.height.x {
             self.surface.view = SurfaceView::Top;
+            self.surface.wall_offset = sector.height.x;
             self.surface.points.fill(consts::HEIGHT as i32);
             [Face::Front, Face::Back].iter()
         } else if position.z > sector.height.y {
             self.surface.view = SurfaceView::Bottom;
+            self.surface.wall_offset = sector.height.y;
             self.surface.points.fill(0);
             [Face::Front, Face::Back].iter()
         } else {
@@ -269,6 +328,7 @@ impl SectorContext {
         &mut self, 
         mut pixels: &mut Pixels, 
         wall_projector: &WallProjector, 
+        player: &Player,
         textures: &TextureSet,
         materials: &[&Material; 3]
     ) {
@@ -307,6 +367,7 @@ impl SectorContext {
             // Draw
             self.surface.draw(
                 &mut pixels,
+                &player,
                 &wall_projector.face, 
                 x, u_coord, 
                 y1, y2, v_coord, v_step, 
@@ -357,6 +418,7 @@ impl Render {
                         context.draw(
                             &mut pixels,
                             &wall_projector, 
+                            &player,
                             self.textures.as_ref(),
                             &materials
                         );

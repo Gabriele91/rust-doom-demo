@@ -39,11 +39,44 @@ impl Map {
                 };
                 if numbers.len() < 4 {
                     return None;
-                }
-                sectors.push(Sector::new(
-                    &Vec2::new(numbers[0], numbers[1]),
-                    &Vec2::new(numbers[2], numbers[3]),
-                ));
+                }                
+                let sector: Sector =  match numbers.len() {
+                    6 => Sector::new_with_material(
+                        &Vec2::new(numbers[0], numbers[1]),
+                        &Vec2::new(numbers[2], numbers[3]),
+                        Material::Texture(TextureMapping {
+                            texture: numbers[4] as usize, 
+                            uv: Vec2::new(numbers[5], numbers[5]),
+                            shade: 0
+                        })
+                    ),
+                    7 => Sector::new_with_material(
+                        &Vec2::new(numbers[0], numbers[1]),
+                        &Vec2::new(numbers[2], numbers[3]),
+                        Material::Color([numbers[4] as u8,numbers[5] as u8,numbers[6] as u8, 0xff])
+                    ),
+                    10 => Sector::new_with_materials(
+                        &Vec2::new(numbers[0], numbers[1]),
+                        &Vec2::new(numbers[2], numbers[3]),
+                        [
+                            Material::Texture(TextureMapping {
+                                texture: numbers[4] as usize, 
+                                uv: Vec2::new(numbers[5], numbers[5]),
+                                shade: numbers[6] as u8
+                            }),
+                            Material::Texture(TextureMapping {
+                                texture: numbers[7] as usize, 
+                                uv: Vec2::new(numbers[8], numbers[8]),
+                                shade: numbers[9] as u8
+                            }),
+                        ]
+                    ),
+                    _ => Sector::new(
+                        &Vec2::new(numbers[0], numbers[1]),
+                        &Vec2::new(numbers[2], numbers[3]),
+                    ),
+                };
+                sectors.push(sector);
             }
             // Walls
             let mut walls: Vec<Wall> = Vec::new();

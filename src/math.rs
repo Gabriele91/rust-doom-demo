@@ -97,6 +97,20 @@ impl<T: ops::Sub<Output = T> + Copy> ops::Sub<Vec3<T>> for Vec3<T> {
     }
 }
 
+pub fn max<T : std::cmp::PartialOrd>(value1:T, value2: T) -> T {
+    if value1 < value2 {
+        return value2;
+    }
+   return value1;
+}
+
+pub fn min<T : std::cmp::PartialOrd>(value1:T, value2: T) -> T {
+    if value2 < value1 {
+        return value2;
+    }
+   return value1;
+}
+
 pub fn clamp<T : std::cmp::PartialOrd>(value:T,min:T,max:T) -> T {
     if value < min {
         return min;

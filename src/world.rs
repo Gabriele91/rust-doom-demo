@@ -2,12 +2,14 @@
 // Using, d3d
 use crate::math::Vec2;
 
+#[derive(Clone, Copy)]
 pub struct TextureMapping {
     pub texture: usize,
     pub uv: Vec2<i32>,
     pub shade: u8
 }
 
+#[derive(Clone, Copy)]
 pub enum Material {
     Color([u8; 4]),
     Texture(TextureMapping)
@@ -48,7 +50,6 @@ impl Wall {
 pub struct Sector {
     pub wall: Vec2<i32>,
     pub height: Vec2<i32>,
-    pub colors: [[u8; 4]; 2],
     pub center: Vec2<i32>,
     pub material: [Material; 2]
 }
@@ -58,7 +59,6 @@ impl Sector {
         Sector {
             wall: wall.clone(),
             height: height.clone(),
-            colors: [[0x0, 0x0, 0x0, 0x0], [0x0, 0x0, 0x0, 0x0]],
             center: Vec2::new(0, 0),
             material: [
                 Material::Color([0xff,0xff,0xff,0xff]),
@@ -71,12 +71,30 @@ impl Sector {
         Sector {
             wall: wall.clone(),
             height: height.clone(),
-            colors: colors,
             center: Vec2::new(0, 0),
             material: [
-                Material::Color([0xff,0xff,0xff,0xff]),
-                Material::Color([0xff,0xff,0xff,0xff])
+                Material::Color(colors[0]),
+                Material::Color(colors[1])
             ]
+        }
+    }
+    pub fn new_with_material(wall: &Vec2<i32>, height: &Vec2<i32>, material: Material) -> Self {
+        Sector {
+            wall: wall.clone(),
+            height: height.clone(),
+            center: Vec2::new(0, 0),
+            material: [
+                material.clone(),
+                material.clone(),
+            ]
+        }
+    }
+    pub fn new_with_materials(wall: &Vec2<i32>, height: &Vec2<i32>, materials: [Material; 2]) -> Self {
+        Sector {
+            wall: wall.clone(),
+            height: height.clone(),
+            center: Vec2::new(0, 0),
+            material: materials
         }
     }
 }
