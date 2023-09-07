@@ -2,7 +2,7 @@
 // Using, d3d
 use crate::math::{Vec2, Vec3};
 use crate::player::Player;
-use crate::world::{Material, TextureMapping, Sector, Wall, World};
+use crate::world::{Material, TextureMapping, SectorHeight, Sector, Wall, World};
 // Usings
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -43,7 +43,7 @@ impl Map {
                 let sector: Sector =  match numbers.len() {
                     6 => Sector::new_with_material(
                         &Vec2::new(numbers[0], numbers[1]),
-                        &Vec2::new(numbers[2], numbers[3]),
+                        &SectorHeight::new(numbers[2], numbers[3]),
                         Material::Texture(TextureMapping {
                             texture: numbers[4] as usize, 
                             uv: Vec2::new(numbers[5], numbers[5]),
@@ -52,12 +52,12 @@ impl Map {
                     ),
                     7 => Sector::new_with_material(
                         &Vec2::new(numbers[0], numbers[1]),
-                        &Vec2::new(numbers[2], numbers[3]),
+                        &SectorHeight::new(numbers[2], numbers[3]),
                         Material::Color([numbers[4] as u8,numbers[5] as u8,numbers[6] as u8, 0xff])
                     ),
                     10 => Sector::new_with_materials(
                         &Vec2::new(numbers[0], numbers[1]),
-                        &Vec2::new(numbers[2], numbers[3]),
+                        &SectorHeight::new(numbers[2], numbers[3]),
                         [
                             Material::Texture(TextureMapping {
                                 texture: numbers[4] as usize, 
@@ -73,7 +73,7 @@ impl Map {
                     ),
                     _ => Sector::new(
                         &Vec2::new(numbers[0], numbers[1]),
-                        &Vec2::new(numbers[2], numbers[3]),
+                        &SectorHeight::new(numbers[2], numbers[3]),
                     ),
                 };
                 sectors.push(sector);

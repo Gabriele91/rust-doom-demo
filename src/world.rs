@@ -47,19 +47,38 @@ impl Wall {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct SectorHeight {
+    pub top: i32,
+    pub bottom: i32 
+}
+
+impl SectorHeight {
+
+    pub fn new(top: i32, bottom: i32) -> Self {
+        SectorHeight {
+            top: top,
+            bottom: bottom
+        }
+    }
+
+    pub fn height(&self) -> i32 {
+        self.top - self.bottom
+    }
+    
+}
+
 pub struct Sector {
     pub wall: Vec2<i32>,
-    pub height: Vec2<i32>,
-    pub center: Vec2<i32>,
+    pub height: SectorHeight,
     pub material: [Material; 2]
 }
 
 impl Sector {
-    pub fn new(wall: &Vec2<i32>, height: &Vec2<i32>) -> Self {
+    pub fn new(wall: &Vec2<i32>, height: &SectorHeight) -> Self {
         Sector {
             wall: wall.clone(),
             height: height.clone(),
-            center: Vec2::new(0, 0),
             material: [
                 Material::Color([0xff,0xff,0xff,0xff]),
                 Material::Color([0xff,0xff,0xff,0xff])
@@ -67,33 +86,30 @@ impl Sector {
         }
     }
 
-    pub fn new_with_colors(wall: &Vec2<i32>, height: &Vec2<i32>, colors: [[u8; 4]; 2]) -> Self {
+    pub fn new_with_colors(wall: &Vec2<i32>, height: &SectorHeight, colors: [[u8; 4]; 2]) -> Self {
         Sector {
             wall: wall.clone(),
             height: height.clone(),
-            center: Vec2::new(0, 0),
             material: [
                 Material::Color(colors[0]),
                 Material::Color(colors[1])
             ]
         }
     }
-    pub fn new_with_material(wall: &Vec2<i32>, height: &Vec2<i32>, material: Material) -> Self {
+    pub fn new_with_material(wall: &Vec2<i32>, height: &SectorHeight, material: Material) -> Self {
         Sector {
             wall: wall.clone(),
             height: height.clone(),
-            center: Vec2::new(0, 0),
             material: [
                 material.clone(),
                 material.clone(),
             ]
         }
     }
-    pub fn new_with_materials(wall: &Vec2<i32>, height: &Vec2<i32>, materials: [Material; 2]) -> Self {
+    pub fn new_with_materials(wall: &Vec2<i32>, height: &SectorHeight, materials: [Material; 2]) -> Self {
         Sector {
             wall: wall.clone(),
             height: height.clone(),
-            center: Vec2::new(0, 0),
             material: materials
         }
     }
