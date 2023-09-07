@@ -78,6 +78,7 @@ pub struct Sector {
 }
 
 impl Sector {
+
     pub fn new(wall: &Vec2<i32>, height: &SectorHeight) -> Self {
         Sector {
             wall: wall.clone(),
@@ -99,6 +100,7 @@ impl Sector {
             ]
         }
     }
+
     pub fn new_with_material(wall: &Vec2<i32>, height: &SectorHeight, material: Material) -> Self {
         Sector {
             wall: wall.clone(),
@@ -109,6 +111,7 @@ impl Sector {
             ]
         }
     }
+
     pub fn new_with_materials(wall: &Vec2<i32>, height: &SectorHeight, materials: [Material; 2]) -> Self {
         Sector {
             wall: wall.clone(),
