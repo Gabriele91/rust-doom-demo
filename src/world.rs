@@ -65,7 +65,10 @@ impl SectorHeight {
     pub fn height(&self) -> i32 {
         self.top - self.bottom
     }
-    
+
+    pub fn center(&self) -> f32 {
+        (self.top + self.bottom) as f32 / 2.0
+    }
 }
 
 pub struct Sector {

@@ -53,7 +53,7 @@ pub struct Render {
 fn distance(point1: &Vec2<i32>, point2: &Vec2<i32>) -> i32 {
     let delta = *point1 - *point2;
     let delta_pw2 = delta * delta;
-    return delta_pw2.x + delta_pw2.y;
+    return (delta_pw2.x as f32 + delta_pw2.y as f32).sqrt() as i32;
 }
 
 impl Surface {
@@ -302,12 +302,13 @@ impl WallContext {
         }
         // Distance
         self.distance = distance(
-            &Vec2::new(0, 0),
+            &Vec2::zeros(),
             &Vec2::new((self.wall[0].x + self.wall[1].x) / 2, (self.wall[0].y + self.wall[1].y) / 2),
         );
         // Clip wall behind player
         if self.wall[0].y < 1 && self.wall[1].y < 1 {
             self.visiable = false;
+            self.distance = 0;
             return self.visiable;
         }
         // Point 1 behind player, clip
@@ -457,10 +458,10 @@ impl Render {
                             self.textures.as_ref(),
                             &materials
                         );
-                        // Add distance
-                        context.distance += wall_context.distance;
-                        count_walls += 1;
                     }
+                    // Add distance
+                    context.distance += wall_context.distance;
+                    count_walls += 1;
                 }
             }
             // AVG distance:
