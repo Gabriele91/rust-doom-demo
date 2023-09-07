@@ -201,7 +201,7 @@ impl WallContext {
     
     pub fn new() -> Self {
         WallContext {
-            wall: [Vec3::new(0, 0, 0); 4],
+            wall: [Vec3::zeros(); 4],
             face: Face::Back,
             distance: 0,
             visiable: false,
