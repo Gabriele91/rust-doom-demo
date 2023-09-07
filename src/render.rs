@@ -186,7 +186,6 @@ impl WallContext {
         &mut self, 
         mut pixels: &mut Pixels, 
         surface: &mut Surface, 
-        face: &Face,
         player: &Player,
         textures: &TextureSet,
         materials: &[&Material; 3]
@@ -227,7 +226,7 @@ impl WallContext {
             surface.draw(
                 &mut pixels,
                 &player,
-                &face, 
+                &self.face, 
                 x, u_coord, 
                 y1, y2, v_coord, v_step, 
                 textures, &materials
@@ -237,7 +236,7 @@ impl WallContext {
         }
     }
 
-    fn project(&mut self, player: &Player, face: &Face, wall2d: &[Vec2<i32>; 2], height: &Vec2<i32>) {
+    fn project(&mut self, player: &Player, face: &Face, wall2d: &[Vec2<i32>; 2], height: &Vec2<i32>) -> bool {
         // Set values 
         self.face = face.clone();
         // Wall direction
@@ -283,7 +282,7 @@ impl WallContext {
         // Clip wall behind player
         if self.wall[0].y < 1 && self.wall[1].y < 1 {
             self.visiable = false;
-            return;
+            return self.visiable;
         }
         // Point 1 behind player, clip
         else if self.wall[0].y < 1 {
@@ -302,6 +301,8 @@ impl WallContext {
         }
         // Draw
         self.visiable = true;
+        // Return visiable
+        return self.visiable;
     }
 
     fn clip_behind_player(&mut self, p1: usize, p2: usize) {
@@ -404,8 +405,6 @@ impl Render {
         for context in sectors_context {
             // Ref to sector
             let sector = &self.world.sectors[context.index];
-            // Reset distance
-            context.distance = 0;
             // Let wall count
             let mut count_walls : i32 = 0;
             // Back and front
@@ -423,13 +422,11 @@ impl Render {
                         &sector.material[1],
                     ];
                     // From a wall described as two points + height, to 3D world
-                    wall_context.project(&player, &face, &wall2d, &sector.height);
-                    // Draw
-                    if wall_context.visiable {
+                    if wall_context.project(&player, &face, &wall2d, &sector.height) {
+                        // Draw
                         wall_context.draw(
                             &mut pixels,
                             &mut context.surface, 
-                            &face,
                             &player,
                             self.textures.as_ref(),
                             &materials
