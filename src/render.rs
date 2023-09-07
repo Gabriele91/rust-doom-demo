@@ -3,7 +3,7 @@ use crate::consts;
 use crate::math::{clamp, Vec2, Vec3};
 use crate::player::Player;
 use crate::windows::draw_pixel;
-use crate::world::{World, Sector, Material, TextureMapping};
+use crate::world::{World, Sector, Material, TextureMapping, SectorHeight};
 use crate::texture::TextureSet;
 // Using
 use std::rc::Rc;
@@ -108,13 +108,39 @@ impl Surface {
             Face::Back => {
                 // Cases
                 match self.view {
-                    SurfaceView::Top => { 
-                        y2 = self.points[x as usize];  
-                        material = materials[1];
-                    },
                     SurfaceView::Bottom => { 
-                        y1 = self.points[x as usize];
+                        // Example of a bottom view:
+                        //       __
+                        //      /||\
+                        //     /||||\
+                        //    ||||||||
+                        //    ||||||||
+                        //    ||/++\|| 
+                        //    |/++++\|
+                        //     \++++/
+                        //      \++/
+                        
+                        // Set y2 as the value of the vertical coordinates of the top of the bottom edges,
+                        // which are the bottom edges of the front view.
+                        y2 = self.points[x as usize];
                         material = materials[2];
+                    },
+                    SurfaceView::Top => { 
+                        // Example of a top view:
+                        //       __
+                        //      /++\
+                        //     /++++\
+                        //    |\++++/|
+                        //    |||++/||
+                        //    |||||||| 
+                        //    ||||||||
+                        //    \||||||/
+                        //     \||||/
+                        
+                        // Set y1 as the value of the vertical coordinates of the bottom of the top edges,
+                        // which are the top edges of the front view.
+                        y1 = self.points[x as usize]; 
+                        material = materials[1];
                     },
                     SurfaceView::Mid => {
                         return;
@@ -150,8 +176,8 @@ impl Surface {
             Face::Front => {
                 // Cases
                 match self.view {
-                    SurfaceView::Top    => { self.points[x as usize] = y1; }, // bottom save to top
-                    SurfaceView::Bottom => { self.points[x as usize] = y2; }, // top save to bottom
+                    SurfaceView::Bottom => { self.points[x as usize] = y1; }, // save bottom edge of front
+                    SurfaceView::Top    => { self.points[x as usize] = y2; }, // save top edge of front
                     SurfaceView::Mid    => {  },
                 }
                 for y in y1..y2 {
@@ -236,7 +262,7 @@ impl WallContext {
         }
     }
 
-    fn project(&mut self, player: &Player, face: &Face, wall2d: &[Vec2<i32>; 2], height: &Vec2<i32>) -> bool {
+    fn project(&mut self, player: &Player, face: &Face, wall2d: &[Vec2<i32>; 2], height: &SectorHeight) -> bool {
         // Set values 
         self.face = face.clone();
         // Wall direction
@@ -262,7 +288,7 @@ impl WallContext {
             // World Y
             self.wall[i].y = ((points[i].y as f32) * pcos + (points[i].x as f32) * psin) as i32;
             // World Z
-            self.wall[i].z = ((height.x - player.position.z) as f32
+            self.wall[i].z = ((height.bottom - player.position.z) as f32
                            + ((player.updown * self.wall[i].y) as f32 / consts::UPDOWN_FACTOR))
                            as i32;
 
@@ -270,7 +296,7 @@ impl WallContext {
             self.wall[i + 2].x = self.wall[i].x;
             self.wall[i + 2].y = self.wall[i].y;
             // Z is to be recompute with new height
-            self.wall[i + 2].z = ((height.y - player.position.z) as f32
+            self.wall[i + 2].z = ((height.top - player.position.z) as f32
                                + ((player.updown * self.wall[i].y) as f32 / consts::UPDOWN_FACTOR))
                                as i32;
         }
@@ -367,14 +393,14 @@ impl SectorContext {
         // Clear distance
         self.distance = 0;
         // Draw top/mid/bottom
-        if position.z < sector.height.x {
+        if position.z > sector.height.top {
             self.surface.view = SurfaceView::Top;
-            self.surface.wall_offset = sector.height.x;
+            self.surface.wall_offset = sector.height.top;
             self.surface.points.fill(consts::HEIGHT as i32);
             [Face::Front, Face::Back].iter()
-        } else if position.z > sector.height.y {
+        } else if position.z < sector.height.bottom {
             self.surface.view = SurfaceView::Bottom;
-            self.surface.wall_offset = sector.height.y;
+            self.surface.wall_offset = sector.height.bottom;
             self.surface.points.fill(0);
             [Face::Front, Face::Back].iter()
         } else {
