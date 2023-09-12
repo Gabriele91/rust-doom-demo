@@ -45,6 +45,24 @@ impl<T: ops::Sub<Output = T> + Copy> ops::Sub<Vec2<T>> for Vec2<T> {
     }
 }
 
+impl<T: ops::Add<Output = T> + Copy> ops::AddAssign<Vec2<T>> for Vec2<T> {
+    fn add_assign(&mut self, right: Vec2<T>) {
+        *self = Vec2::new(self.x + right.x, self.y + right.y);
+    }
+}
+
+impl<T: ops::Mul<Output = T> + Copy> ops::MulAssign<Vec2<T>> for Vec2<T> {
+    fn mul_assign(&mut self, right: Vec2<T>) {
+        *self = Vec2::new(self.x * right.x, self.y * right.y);
+    }
+}
+
+impl<T: ops::Sub<Output = T> + Copy> ops::SubAssign<Vec2<T>> for Vec2<T> {
+    fn sub_assign(&mut self, right: Vec2<T>) {
+        *self = Vec2::new(self.x - right.x, self.y - right.y);
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3<T> {
     pub x: T,
@@ -106,6 +124,25 @@ impl<T: ops::Sub<Output = T> + Copy> ops::Sub<Vec3<T>> for Vec3<T> {
         Vec3::new(self.x - right.x, self.y - right.y, self.z - right.z)
     }
 }
+
+impl<T: ops::Add<Output = T> + Copy> ops::AddAssign<Vec3<T>> for Vec3<T> {
+    fn add_assign(&mut self, right: Vec3<T>) {
+        *self = Vec3::new(self.x + right.x, self.y + right.y, self.z + right.z);
+    }
+}
+
+impl<T: ops::Mul<Output = T> + Copy> ops::MulAssign<Vec3<T>> for Vec3<T> {
+    fn mul_assign(&mut self, right: Vec3<T>) {
+        *self = Vec3::new(self.x * right.x, self.y * right.y, self.z * right.z);
+    }
+}
+
+impl<T: ops::Sub<Output = T> + Copy> ops::SubAssign<Vec3<T>> for Vec3<T> {
+    fn sub_assign(&mut self, right: Vec3<T>) {
+        *self = Vec3::new(self.x - right.x, self.y - right.y, self.z - right.z);
+    }
+}
+
 
 pub fn max<T : std::cmp::PartialOrd>(value1:T, value2: T) -> T {
     if value1 < value2 {
