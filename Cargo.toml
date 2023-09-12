@@ -13,4 +13,5 @@ opt-level = 3
 pixels = "0.13"
 winit = "0.28"
 winit_input_helper = "0.14"
-clap = "4.4.2"
+clap = "4.4.3"
+lazy_static = "1.4"
