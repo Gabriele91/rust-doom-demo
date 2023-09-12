@@ -1,0 +1,40 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"args": [
+				"--bin=rust-doom-demo",
+				"--package=rust-doom-demo",
+                "--",
+                "--textures",
+                "assets/textures",
+                "--map",
+                "${file}"
+			],
+			"label": "Run doom on file"
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"args": [
+				"--release",
+				"--bin=rust-doom-demo",
+				"--package=rust-doom-demo",
+                "--",
+                "--textures",
+                "assets/textures",
+                "--map",
+                "${file}"
+			],
+			"label": "Run doom on file, release"
+		}
+	]
+}
