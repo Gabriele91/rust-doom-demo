@@ -225,7 +225,7 @@ impl WallContext {
         // x distance
         let dx: i32 = self.large(); if dx == 0 { return; }
         // Hold initial x1 starting position
-        let xs = self.wall[0].x;
+        let xs: i32 = self.wall[0].x;
         // Texture U
         let (mut u_coord, u_step) = match materials[0] {
             Material::Texture(map) => self.u_texturing(textures, self.wall[0].x, self.wall[1].x, map),
