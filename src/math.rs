@@ -15,6 +15,14 @@ impl<T : Copy> Vec2<T> {
         Vec2 { x, y }
     }
 
+    pub fn new_x(x: T) -> Self where T: Default {
+        Vec2 { x: x, y: T::default() }
+    }
+
+    pub fn new_y(y: T) -> Self where T: Default {
+        Vec2 { x: T::default(), y: y }
+    }
+
     pub fn zeros() -> Self where T: Default {
         Vec2 { x: T::default() , y: T::default() }
     }
@@ -73,6 +81,18 @@ pub struct Vec3<T> {
 impl<T : Copy> Vec3<T> {
     pub fn new(x: T, y: T, z: T) -> Self {
         Vec3 { x, y, z }
+    }
+
+    pub fn new_x(x: T) -> Self where T: Default {
+        Vec3 { x: x, y: T::default(), z: T::default() }
+    }
+
+    pub fn new_y(y: T) -> Self where T: Default {
+        Vec3 { x: T::default(), y: y, z: T::default() }
+    }
+
+    pub fn new_z(z: T) -> Self where T: Default {
+        Vec3 { x: T::default(), y: T::default(), z: z }
     }
 
     pub fn zeros() -> Self where T: Default {

@@ -144,11 +144,11 @@ impl Map {
             if player_numbers.len() < 5 {
                 return None;
             }
-            let player = Rc::new(RefCell::new(Player {
-                position: Vec3::new(player_numbers[0], player_numbers[1], player_numbers[2]),
-                angle: player_numbers[3],
-                updown: player_numbers[4],
-            }));
+            let player = Rc::new(RefCell::new(Player::new_with_position_angles(
+                Vec3::new(player_numbers[0], player_numbers[1], player_numbers[2]),
+                player_numbers[3],
+                player_numbers[4]
+            )));
 
             // Return the
             return Some(Map {
