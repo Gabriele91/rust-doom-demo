@@ -7,6 +7,7 @@ use crate::world::{World, Sector, Material, TextureMapping, SectorHeight};
 use crate::texture::TextureSet;
 // Using
 use std::rc::Rc;
+use num_traits::Zero;
 use pixels::Pixels;
 
 #[derive(Clone, Copy, PartialEq)]
@@ -338,16 +339,14 @@ impl WallContext {
         let da = point1.y as f32;
         let db = point2.y as f32;
         let d = da - db;
-        if d == 0.0 {
-            if (*point1).y == 0 { point1.y = 1; }
-        } else {
+        if !d.is_zero() && !d.is_nan() && !d.is_infinite() {
             let s = da / d ;
-            let dv3: Vec3<i32> = point2 - *point1;
-            point1.x = (point1.x as f32 + (s * (dv3.x as f32))) as i32;
-            point1.y = (point1.y as f32 + (s * (dv3.y as f32))) as i32;
-            point1.z = (point1.z as f32 + (s * (dv3.z as f32))) as i32;
-            if (*point1).y == 0 { point1.y = 1; }
+            if !s.is_zero() && !s.is_nan() && !s.is_infinite() {
+                let diff: Vec3<f32> = (point2 - *point1).as_vec::<f32>();
+                *point1 = (point1.as_vec::<f32>() + diff * s).as_vec::<i32>();
+            }
         }
+        if point1.y == 0 { point1.y = 1; }
     }
 
     fn distance_bottom_line(&self) -> i32 {
