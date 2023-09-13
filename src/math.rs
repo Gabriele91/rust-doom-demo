@@ -3,6 +3,7 @@
 use core::ops;
 use lazy_static::lazy_static;
 use std::f32::consts::PI;
+use num_traits::{cast::NumCast, Float};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec2<T> {
@@ -10,7 +11,7 @@ pub struct Vec2<T> {
     pub y: T,
 }
 
-impl<T : Copy> Vec2<T> {
+impl<T : Sized + Copy + NumCast> Vec2<T> {
     pub fn new(x: T, y: T) -> Self {
         Vec2 { x, y }
     }
@@ -30,42 +31,89 @@ impl<T : Copy> Vec2<T> {
     pub fn yx(&self) -> Vec2<T> {
         Vec2 { x: self.y, y: self.x }
     }
+
+    pub fn as_vec<U: From<T> + Sized + Copy + NumCast + Default>(&self) -> Vec2<U> {
+        Vec2::<U>{ 
+            x: NumCast::from(self.x).unwrap_or_default(),
+            y: NumCast::from(self.y).unwrap_or_default(),
+        }
+    }
+
 }
 
-impl<T: ops::Add<Output = T> + Copy> ops::Add<Vec2<T>> for Vec2<T> {
+impl<T: Float> Vec2<T> {
+    pub fn normalize(&self) -> Vec2<T> {
+        let length = self.dot(&self).sqrt();
+        Vec2 { x: self.x / length, y: self.y / length }
+    }
+}
+
+impl<T: ops::Add<Output = T> + ops::Mul<Output = T> + ops::Sub<Output = T> + Sized + Copy + NumCast> Vec2<T> {
+    pub fn dot(&self, right: &Vec2<T>) -> T {
+        return self.x * right.x + self.y * right.y;
+    }
+
+    pub fn cross(&self, right: &Vec2<T>) -> T {
+        self.x * right.y - self.y * right.x
+    }
+}
+
+impl<T: ops::Add<Output = T> + Sized + Copy + NumCast> ops::Add<Vec2<T>> for Vec2<T> {
     type Output = Vec2<T>;
     fn add(self, right: Vec2<T>) -> Vec2<T> {
         Vec2::new(self.x + right.x, self.y + right.y)
     }
 }
 
-impl<T: ops::Mul<Output = T> + Copy> ops::Mul<Vec2<T>> for Vec2<T> {
+impl<T: ops::Mul<Output = T> + Sized + Copy + NumCast> ops::Mul<Vec2<T>> for Vec2<T> {
     type Output = Vec2<T>;
     fn mul(self, right: Vec2<T>) -> Vec2<T> {
         Vec2::new(self.x * right.x, self.y * right.y)
     }
 }
 
-impl<T: ops::Sub<Output = T> + Copy> ops::Sub<Vec2<T>> for Vec2<T> {
+impl<T: ops::Sub<Output = T> + Sized + Copy + NumCast> ops::Sub<Vec2<T>> for Vec2<T> {
     type Output = Vec2<T>;
     fn sub(self, right: Vec2<T>) -> Vec2<T> {
         Vec2::new(self.x - right.x, self.y - right.y)
     }
 }
 
-impl<T: ops::Add<Output = T> + Copy> ops::AddAssign<Vec2<T>> for Vec2<T> {
+impl<T: ops::Add<Output = T> + Sized + Copy + NumCast> ops::Add<T> for Vec2<T> {
+    type Output = Vec2<T>;
+    fn add(self, right: T) -> Vec2<T> {
+        Vec2::new(self.x + right, self.y + right)
+    }
+}
+
+impl<T: ops::Mul<Output = T> + Sized + Copy + NumCast> ops::Mul<T> for Vec2<T> {
+    type Output = Vec2<T>;
+    fn mul(self, right: T) -> Vec2<T> {
+        Vec2::new(self.x * right, self.y * right)
+    }
+}
+
+impl<T: ops::Sub<Output = T> + Sized + Copy + NumCast> ops::Sub<T> for Vec2<T> {
+    type Output = Vec2<T>;
+    fn sub(self, right: T) -> Vec2<T> {
+        Vec2::new(self.x - right, self.y - right)
+    }
+}
+
+
+impl<T: ops::Add<Output = T> + Sized + Copy + NumCast> ops::AddAssign<Vec2<T>> for Vec2<T> {
     fn add_assign(&mut self, right: Vec2<T>) {
         *self = Vec2::new(self.x + right.x, self.y + right.y);
     }
 }
 
-impl<T: ops::Mul<Output = T> + Copy> ops::MulAssign<Vec2<T>> for Vec2<T> {
+impl<T: ops::Mul<Output = T> + Sized + Copy + NumCast> ops::MulAssign<Vec2<T>> for Vec2<T> {
     fn mul_assign(&mut self, right: Vec2<T>) {
         *self = Vec2::new(self.x * right.x, self.y * right.y);
     }
 }
 
-impl<T: ops::Sub<Output = T> + Copy> ops::SubAssign<Vec2<T>> for Vec2<T> {
+impl<T: ops::Sub<Output = T> + Sized + Copy + NumCast> ops::SubAssign<Vec2<T>> for Vec2<T> {
     fn sub_assign(&mut self, right: Vec2<T>) {
         *self = Vec2::new(self.x - right.x, self.y - right.y);
     }
@@ -78,7 +126,7 @@ pub struct Vec3<T> {
     pub z: T,
 }
 
-impl<T : Copy> Vec3<T> {
+impl<T : Sized + Copy + NumCast> Vec3<T> {
     pub fn new(x: T, y: T, z: T) -> Self {
         Vec3 { x, y, z }
     }
@@ -122,42 +170,93 @@ impl<T : Copy> Vec3<T> {
     pub fn zy(&self) -> Vec2<T> {
         Vec2::new( self.z, self.y )
     }
+
+    pub fn as_vec< U:  Sized + Copy + NumCast + Default>(&self) -> Vec3<U> {
+        Vec3::<U>{ 
+            x: NumCast::from(self.x).unwrap_or_default(),
+            y: NumCast::from(self.y).unwrap_or_default(),
+            z: NumCast::from(self.z).unwrap_or_default(),
+        }
+    }
+
 }
 
-impl<T: ops::Add<Output = T> + Copy> ops::Add<Vec3<T>> for Vec3<T> {
+impl<T: Float> Vec3<T> {
+    pub fn normalize(&self) -> Vec3<T> {
+        let length = self.dot(&self).sqrt();
+        Vec3 { x: self.x / length, y: self.y / length, z: self.z / length }
+    }
+}
+
+impl<T: ops::Add<Output = T> + ops::Mul<Output = T> + ops::Sub<Output = T> + Sized + Copy + NumCast> Vec3<T> {
+    pub fn dot(&self, right: &Vec3<T>) -> T {
+        return self.x * right.x + self.y * right.y + self.z * right.z;
+    }
+
+    pub fn cross(&self, right: &Vec3<T>) -> Vec3<T> {
+        Vec3::new(
+            self.y * right.z - self.z * right.y, 
+            self.z * right.x - self.x * right.z, 
+            self.x * right.y - self.y * right.x
+        )
+    }
+}
+
+impl<T: ops::Add<Output = T> + Sized + Copy + NumCast> ops::Add<Vec3<T>> for Vec3<T> {
     type Output = Vec3<T>;
     fn add(self, right: Vec3<T>) -> Vec3<T> {
         Vec3::new(self.x + right.x, self.y + right.y, self.z + right.z)
     }
 }
 
-impl<T: ops::Mul<Output = T> + Copy> ops::Mul<Vec3<T>> for Vec3<T> {
+impl<T: ops::Mul<Output = T> + Sized + Copy + NumCast> ops::Mul<Vec3<T>> for Vec3<T> {
     type Output = Vec3<T>;
     fn mul(self, right: Vec3<T>) -> Vec3<T> {
         Vec3::new(self.x * right.x, self.y * right.y, self.z * right.z)
     }
 }
 
-impl<T: ops::Sub<Output = T> + Copy> ops::Sub<Vec3<T>> for Vec3<T> {
+impl<T: ops::Sub<Output = T> + Sized + Copy + NumCast> ops::Sub<Vec3<T>> for Vec3<T> {
     type Output = Vec3<T>;
     fn sub(self, right: Vec3<T>) -> Vec3<T> {
         Vec3::new(self.x - right.x, self.y - right.y, self.z - right.z)
     }
 }
 
-impl<T: ops::Add<Output = T> + Copy> ops::AddAssign<Vec3<T>> for Vec3<T> {
+impl<T: ops::Add<Output = T> + Sized + Copy + NumCast> ops::Add<T> for Vec3<T> {
+    type Output = Vec3<T>;
+    fn add(self, right: T) -> Vec3<T> {
+        Vec3::new(self.x + right, self.y + right, self.z + right)
+    }
+}
+
+impl<T: ops::Mul<Output = T> + Sized + Copy + NumCast> ops::Mul<T> for Vec3<T> {
+    type Output = Vec3<T>;
+    fn mul(self, right: T) -> Vec3<T> {
+        Vec3::new(self.x * right, self.y * right, self.z * right)
+    }
+}
+
+impl<T: ops::Sub<Output = T> + Sized + Copy + NumCast> ops::Sub<T> for Vec3<T> {
+    type Output = Vec3<T>;
+    fn sub(self, right: T) -> Vec3<T> {
+        Vec3::new(self.x - right, self.y - right, self.z - right)
+    }
+}
+
+impl<T: ops::Add<Output = T> + Sized + Copy + NumCast> ops::AddAssign<Vec3<T>> for Vec3<T> {
     fn add_assign(&mut self, right: Vec3<T>) {
         *self = Vec3::new(self.x + right.x, self.y + right.y, self.z + right.z);
     }
 }
 
-impl<T: ops::Mul<Output = T> + Copy> ops::MulAssign<Vec3<T>> for Vec3<T> {
+impl<T: ops::Mul<Output = T> + Sized + Copy + NumCast> ops::MulAssign<Vec3<T>> for Vec3<T> {
     fn mul_assign(&mut self, right: Vec3<T>) {
         *self = Vec3::new(self.x * right.x, self.y * right.y, self.z * right.z);
     }
 }
 
-impl<T: ops::Sub<Output = T> + Copy> ops::SubAssign<Vec3<T>> for Vec3<T> {
+impl<T: ops::Sub<Output = T> + Sized + Copy + NumCast> ops::SubAssign<Vec3<T>> for Vec3<T> {
     fn sub_assign(&mut self, right: Vec3<T>) {
         *self = Vec3::new(self.x - right.x, self.y - right.y, self.z - right.z);
     }
