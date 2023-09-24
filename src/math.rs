@@ -131,6 +131,10 @@ impl<T : Sized + Copy + NumCast> Vec3<T> {
         Vec3 { x, y, z }
     }
 
+    pub fn new_vec2_z(xy: &Vec2<T>, z: T) -> Self {
+        Vec3 { x: xy.x, y: xy.y, z: z }
+    }
+
     pub fn new_x(x: T) -> Self where T: Default {
         Vec3 { x: x, y: T::default(), z: T::default() }
     }
@@ -142,7 +146,7 @@ impl<T : Sized + Copy + NumCast> Vec3<T> {
     pub fn new_z(z: T) -> Self where T: Default {
         Vec3 { x: T::default(), y: T::default(), z: z }
     }
-
+    
     pub fn zeros() -> Self where T: Default {
         Vec3 { x: T::default(), y: T::default(), z: T::default() }
     }
