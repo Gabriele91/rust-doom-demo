@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 // Using, d3d
 use crate::consts;
-use crate::math::{clamp, Vec2, Vec3};
+use crate::math::{clamp, lerp, Vec2, Vec3};
 use crate::player::Player;
 use crate::windows::draw_pixel;
 use crate::world::{World, Sector, Material, TextureMapping, SectorHeight};
@@ -34,6 +34,9 @@ struct Surface {
 #[derive(Clone)]
 struct WallContext {
     wall: [Vec3<i32>; 4],
+    depth: [f32; 2],
+    uclip: [f32; 2],
+    width: f32,
     face: Face,
     distance: i32,
     visiable: bool
@@ -251,6 +254,9 @@ impl WallContext {
     pub fn new() -> Self {
         WallContext {
             wall: [Vec3::zeros(); 4],
+            depth: [0.0; 2],
+            uclip: [0.0; 2],
+            width: 0.0,
             face: Face::Back,
             distance: 0,
             visiable: false
@@ -278,16 +284,16 @@ impl WallContext {
         // Let x1 and x2
         let mut x1 = self.wall[0].x;
         let mut x2 = self.wall[1].x;
-        // Texture U
-        let (mut u_coord, u_step) = match materials[0] {
-            Material::Texture(map) => self.u_texturing(textures, x1, x2, map),
-            _ => (0.0,0.0)
-        };
         // Clip X
         x1 = clamp(x1, 0, consts::WIDTH as i32);
         x2 = clamp(x2, 0, consts::WIDTH as i32);
         // Draw line
         for x in x1..x2 {
+            // compute u
+            let u = match materials[0] {
+                Material::Texture(map) => self.u_texturing_prospective(textures, x - xs, dx, map),
+                _ => 0.0
+            };
             // From x1 to x, starting from closet point to current bottom
             let mut y1: i32 = dyb * (((x - xs) as f32 + 0.5) as i32) / dx + self.wall[0].y;
             // From x1 to x, starting from closet point to current top
@@ -305,12 +311,10 @@ impl WallContext {
                 &mut pixels,
                 &player,
                 &self.face, 
-                x, u_coord, 
+                x, u, 
                 y1, y2, v_coord, v_step, 
                 textures, &materials
             );
-            // Next
-            u_coord += u_step;
         }
     }
 
@@ -330,6 +334,8 @@ impl WallContext {
                 ],
             }
         };
+        // Save wall width
+        self.width = render::f32distance(&wall2d[0].as_vec::<f32>(), &wall2d[1].as_vec::<f32>());
         // Cache cos and sin
         let pcos = player.cos();
         let psin = player.sin();
@@ -357,6 +363,11 @@ impl WallContext {
             &Vec2::zeros(),
             &Vec2::new((self.wall[0].x + self.wall[1].x) / 2, (self.wall[0].y + self.wall[1].y) / 2),
         );
+        // Store w[0], w[1] before clip
+        let w_preclip = [
+            self.wall[0].clone(), 
+            self.wall[1].clone()
+        ];
         // Clip wall behind player
         if self.wall[0].y < 1 && self.wall[1].y < 1 {
             self.visiable = false;
@@ -372,6 +383,12 @@ impl WallContext {
         else if self.wall[1].y < 1 {
             self.clip_behind_player(1, 0); // bottom line
             self.clip_behind_player(3,2); // top line
+        }
+        // Save depth, NB. stored in Y coord
+        for i in 0..2 {
+            self.depth[i] = self.wall[i].y as f32;
+            self.uclip[i] = render::f32distance(&self.wall[i].xy().as_vec::<f32>(),
+                                                &w_preclip[i].xy().as_vec::<f32>()) / self.width;
         }
         // Screen position
         for i in 0..4 {
@@ -412,10 +429,26 @@ impl WallContext {
         self.wall[1].x - self.wall[0].x
     }
 
-    fn u_texturing(&self, textures: &TextureSet, x1: i32, x2:i32, map: &TextureMapping) -> (f32, f32){
-        let step = (textures.set[map.texture].dimensions.x as i32 * map.uv.x) as f32 / ((x2-x1) as f32);
-        let start: f32 = if x1 < 0 { -step * (x1 as f32) } else { 0.0 };
-        return (start,step);
+    fn u_texturing_linear(&self, textures: &TextureSet, wx: i32, dx: i32, map: &TextureMapping) -> f32 {
+        let a = wx as f32 / (dx as f32);
+        let u0 = self.uclip[0];
+        let u1 = 1.0 - self.uclip[1];
+        let u = lerp(u0,u1,a);
+        return u * (map.uv.x as f32) * (textures.set[map.texture].dimensions.x as f32);
+    }
+
+    fn u_texturing_prospective(&self, textures: &TextureSet, wx: i32, dx: i32, map: &TextureMapping) -> f32 {
+        let a = wx as f32 / (dx as f32);
+        let u0 = self.uclip[0];
+        let u1 = 1.0 - self.uclip[1];
+        let z0 = self.depth[0];
+        let z1 = self.depth[1];
+        let iz0 = 1.0 / z0;
+        let iz1 = 1.0 / z1;
+        let utop = lerp(u0 * iz0,u1 * iz1,a);
+        let ubottom = lerp(iz0, iz1, a);
+        let u = utop / ubottom;
+        return u * (map.uv.x as f32) * (textures.set[map.texture].dimensions.x as f32);
     }
 
     fn v_texturing(&self, textures: &TextureSet, y1: i32, y2:i32, map: &TextureMapping) -> (f32, f32){

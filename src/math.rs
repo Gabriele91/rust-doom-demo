@@ -266,7 +266,6 @@ impl<T: ops::Sub<Output = T> + Sized + Copy + NumCast> ops::SubAssign<Vec3<T>> f
     }
 }
 
-
 pub fn max<T : std::cmp::PartialOrd>(value1:T, value2: T) -> T {
     if value1 < value2 {
         return value2;
@@ -288,6 +287,11 @@ pub fn clamp<T : std::cmp::PartialOrd>(value:T,min:T,max:T) -> T {
         return max;
     }
    return value;
+}
+
+pub fn lerp<T: Float>(start: T, end: T, alpha: T) -> T
+{
+    start + (end - start) * alpha
 }
 
 pub fn no_negative<T : std::cmp::PartialOrd + Default>(value:T) -> T {
