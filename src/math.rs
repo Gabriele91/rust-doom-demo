@@ -32,7 +32,7 @@ impl<T : Sized + Copy + NumCast> Vec2<T> {
         Vec2 { x: self.y, y: self.x }
     }
 
-    pub fn as_vec<U: From<T> + Sized + Copy + NumCast + Default>(&self) -> Vec2<U> {
+    pub fn as_vec<U: Sized + Copy + NumCast + Default>(&self) -> Vec2<U> {
         Vec2::<U>{ 
             x: NumCast::from(self.x).unwrap_or_default(),
             y: NumCast::from(self.y).unwrap_or_default(),
@@ -291,6 +291,16 @@ pub fn no_negative<T : std::cmp::PartialOrd + Default>(value:T) -> T {
         return T::default();
     }
    return value;
+}
+
+pub fn radians<T: Float + NumCast + Default>(degrees: T) -> T {
+    let pi: T = T::from(std::f64::consts::PI).unwrap_or_default();
+    degrees * (pi / T::from(180.0).unwrap())
+}
+
+pub fn degrees<T: Float + NumCast + Default>(radians: T) -> T {
+    let pi: T = T::from(std::f64::consts::PI).unwrap_or_default();
+    radians * (T::from(180.0).unwrap() / pi)
 }
 
 lazy_static! {

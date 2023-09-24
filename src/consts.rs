@@ -22,5 +22,6 @@ pub const ROTATION_VELOCITY : i32 = 1;
 pub const UPDOWN_VELOCITY : i32 = 1;
 
 // Camera
-pub const FOV : i32 = 200;
+pub const FOV : f32 = 90.0;
+pub const H_FOV : f32 = FOV / 2.0;
 pub const UPDOWN_FACTOR : f32 = 60.0;

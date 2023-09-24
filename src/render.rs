@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Using, d3d
 use crate::consts;
 use crate::math::{clamp, Vec2, Vec3};
@@ -35,7 +36,7 @@ struct WallContext {
     wall: [Vec3<i32>; 4],
     face: Face,
     distance: i32,
-    visiable: bool,
+    visiable: bool
 }
 
 #[derive(Clone)]
@@ -51,17 +52,64 @@ pub struct Render {
     sectors_context: Vec<SectorContext>
 }
 
-fn distance(point1: &Vec2<i32>, point2: &Vec2<i32>) -> i32 {
-    let delta = *point1 - *point2;
-    let delta_pw2 = delta * delta;
-    return (delta_pw2.x as f32 + delta_pw2.y as f32).sqrt() as i32;
+mod render {
+    use lazy_static::lazy_static;
+
+    use crate::consts::{self, H_WIDTH, H_FOV};
+    use crate::math::{Vec2, radians};
+    use std::f32::consts::PI;
+    use libm::atanf;
+
+    lazy_static! {
+        pub static ref SCREEN_DIST: f32 = {
+            (consts::H_WIDTH as f32) / radians(H_FOV).tan()
+        };
+
+        pub static ref X_TO_ANGLE: [f32; (consts::WIDTH+1) as usize] = {
+            let mut x_to_angle = [0.0; (consts::WIDTH+1) as usize];
+            for x in 0..=consts::WIDTH {
+                x_to_angle[x as usize] = atanf((consts::H_WIDTH - x) as f32 / *SCREEN_DIST);
+            }
+            x_to_angle
+        };
+    }
+
+    #[inline]
+    pub fn inv_fov() -> f32 {
+        1.0 / (consts::H_FOV * PI / 180.0).tan()
+    }
+
+    #[inline]
+    pub fn width_on_fov() -> i32 {
+        ((consts::WIDTH as f32) * inv_fov()) as i32
+    } 
+
+    pub fn angle_to_x(angle: f32) -> f32 {
+        if angle > 0.0 {
+            *SCREEN_DIST - angle.tan() * (H_WIDTH as f32)
+        } else {
+            -angle.tan() * (H_WIDTH as f32) + *SCREEN_DIST
+        }
+    }
+
+    pub fn i32distance(point1: &Vec2<i32>, point2: &Vec2<i32>) -> i32 {
+        let delta = *point1 - *point2;
+        let delta_pw2 = delta * delta;
+        return (delta_pw2.x as f32 + delta_pw2.y as f32).sqrt() as i32;
+    }
+
+    pub fn f32distance(point1: &Vec2<f32>, point2: &Vec2<f32>) -> f32 {
+        let delta = *point1 - *point2;
+        let delta_pw2 = delta * delta;
+        return (delta_pw2.x + delta_pw2.y).sqrt();
+    }
 }
 
 impl Surface {
 
     fn look_and_move_updown(&self, player: &Player) -> (f32, f32) {
         // Looks up and down factor
-        let factor = (consts::FOV as f32) / (consts::UPDOWN_FACTOR as f32) - 0.1;
+        let factor = (render::width_on_fov() as f32) / (consts::UPDOWN_FACTOR as f32) - 0.1;
         // Start
         let look_updown = -(player.updown as f32) * factor;    
         // Move
@@ -78,7 +126,7 @@ impl Surface {
         y -= yo;
         let mut z = y as f32 + look_updown; if z == 0.0 { z = 0.0001; }
         let fx = (x as f32) / z * move_updown * tile;
-        let fy = (consts::FOV as f32) / z * move_updown * tile;
+        let fy = (render::width_on_fov() as f32) / z * move_updown * tile;
         let psin = player.sin();
         let pcos = player.cos();
         let mut rx = fx * psin - fy * pcos + ((player.position.y as f32)/(yo as f32) * tile); 
@@ -205,7 +253,7 @@ impl WallContext {
             wall: [Vec3::zeros(); 4],
             face: Face::Back,
             distance: 0,
-            visiable: false,
+            visiable: false
         }
     }
 
@@ -227,14 +275,17 @@ impl WallContext {
         let dx: i32 = self.large(); if dx == 0 { return; }
         // Hold initial x1 starting position
         let xs: i32 = self.wall[0].x;
+        // Let x1 and x2
+        let mut x1 = self.wall[0].x;
+        let mut x2 = self.wall[1].x;
         // Texture U
         let (mut u_coord, u_step) = match materials[0] {
-            Material::Texture(map) => self.u_texturing(textures, self.wall[0].x, self.wall[1].x, map),
+            Material::Texture(map) => self.u_texturing(textures, x1, x2, map),
             _ => (0.0,0.0)
         };
         // Clip X
-        let x1 = clamp(self.wall[0].x, 0, consts::WIDTH as i32);
-        let x2 = clamp(self.wall[1].x, 0, consts::WIDTH as i32);
+        x1 = clamp(x1, 0, consts::WIDTH as i32);
+        x2 = clamp(x2, 0, consts::WIDTH as i32);
         // Draw line
         for x in x1..x2 {
             // From x1 to x, starting from closet point to current bottom
@@ -302,7 +353,7 @@ impl WallContext {
                                as i32;
         }
         // Distance
-        self.distance = distance(
+        self.distance = render::i32distance(
             &Vec2::zeros(),
             &Vec2::new((self.wall[0].x + self.wall[1].x) / 2, (self.wall[0].y + self.wall[1].y) / 2),
         );
@@ -324,8 +375,8 @@ impl WallContext {
         }
         // Screen position
         for i in 0..4 {
-            self.wall[i].x = (self.wall[i].x * consts::FOV) / self.wall[i].y + consts::H_WIDTH as i32;
-            self.wall[i].y = (self.wall[i].z * consts::FOV) / self.wall[i].y + consts::H_HEIGHT as i32;
+            self.wall[i].x = (self.wall[i].x * render::width_on_fov()) / self.wall[i].y + consts::H_WIDTH as i32;
+            self.wall[i].y = (self.wall[i].z * render::width_on_fov()) / self.wall[i].y + consts::H_HEIGHT as i32;
         }
         // Draw
         self.visiable = true;
@@ -362,7 +413,7 @@ impl WallContext {
     }
 
     fn u_texturing(&self, textures: &TextureSet, x1: i32, x2:i32, map: &TextureMapping) -> (f32, f32){
-        let step =(textures.set[map.texture].dimensions.x as i32 * map.uv.x) as f32 / ((x2-x1) as f32);
+        let step = (textures.set[map.texture].dimensions.x as i32 * map.uv.x) as f32 / ((x2-x1) as f32);
         let start: f32 = if x1 < 0 { -step * (x1 as f32) } else { 0.0 };
         return (start,step);
     }
