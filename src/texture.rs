@@ -4,9 +4,10 @@ use pixels::Pixels;
 
 // Using, d3d
 use crate::math::{Vec2, no_negative};
-use crate::tga::decode_tga;
+use crate::tga::{decode_tga, from_rgba5551_to_rgba_32};
 // Using
 use std::fs::{self, DirEntry, ReadDir};
+use std::ffi::OsStr;
 
 pub struct Texture {
     pub dimensions: Vec2<usize>,
@@ -82,7 +83,15 @@ pub struct TextureSet {
 
 fn sort_paths(entries: ReadDir) -> Vec<DirEntry> {
     let mut paths: Vec<DirEntry> = entries.map(|r| r.unwrap()).collect();
-    paths.sort_by_key(|dir| dir.path());
+    paths.sort_by_key(|dir| 
+        dir.path()
+        .file_stem()
+        .unwrap_or(OsStr::new(&format!("{}",i32::MAX)))
+        .to_str()
+        .unwrap_or(&format!("{}",i32::MAX))
+        .parse::<i32>()
+        .unwrap_or(i32::MAX)
+    );
     return paths;
 }
 
@@ -120,10 +129,19 @@ impl TextureSet {
                         ) {
                             match format {
                                 1 | 3 | 4 => {
-                                    new_texture.channels = format;
+                                    new_texture.channels = colors;
                                     textures.set.push(new_texture)
                                 }
-                                2 => println!("{:?} does not supported", &path),
+                                2 => match from_rgba5551_to_rgba_32(&new_texture.data, 
+                                                              new_texture.dimensions.x, 
+                                                             new_texture.dimensions.y) {
+                                    Some(new_buffer) => {
+                                        new_texture.data = new_buffer;
+                                        new_texture.channels = colors;
+                                        textures.set.push(new_texture)
+                                    },
+                                    None => println!("{:?} does not supported", &path)
+                                },
                                 _ => {}
                             }
                         }

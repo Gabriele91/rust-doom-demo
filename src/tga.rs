@@ -91,7 +91,6 @@ fn decoder_rle(width: usize, height: usize, image_bytes_pixel: usize, buffer_in:
     return out_image;
 }
 
-
 fn read_rgba5551(data: &[u8]) -> (u8, u8, u8, u8) {
     let r = (data[0] & 0xf8) >> 3;
     let g = ((data[0] & 0x07) << 2) | ((data[1] & 0xfb) >> 6);
@@ -106,6 +105,26 @@ fn write_rgba5551(data: &mut [u8], r: u8, g: u8, b: u8, a: u8) {
     data[1] = ((g & 0x03) << 6) | (data[1] & 0xf8);
     data[1] = (b << 1) | (data[1] & 0xc1);
     data[1] = a | (data[1] & 0xfe);
+}
+
+pub fn from_rgba5551_to_rgba_32(data: &[u8], width: usize, height: usize) -> Option< Vec<u8> > {
+    // Alloc
+    const IN_BYTES_PER_PIXEL: usize = 2;
+    const OUT_BYTES_PER_PIXEL: usize = 4;
+    let mut output: Vec<u8> = Vec::with_capacity(OUT_BYTES_PER_PIXEL * width * height);
+    // Iterator of pixels
+    let mut chk_data = data.chunks(IN_BYTES_PER_PIXEL);
+    // Convert
+    for _ in 0..( width * height ) {
+        let chk = match chk_data.next() {
+            Some(value) => value,
+            None => return None
+        };
+        let (r,g,b,a) = read_rgba5551(chk);
+        output.extend_from_slice(&[r * 255 / 31, g * 255 / 31, b * 255 / 31, a * 255]);
+    }
+
+    return Some(output);
 }
 
 fn rga_swap_r_and_b_16(bytes: &mut [u8], width: usize, height: usize) {
