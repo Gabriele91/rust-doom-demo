@@ -46,6 +46,11 @@ impl<T: Float> Vec2<T> {
         let length = self.dot(&self).sqrt();
         Vec2 { x: self.x / length, y: self.y / length }
     }
+    
+    pub fn distance(&self, right: &Vec2<T>) -> T {
+        let diff = *self - *right;
+        diff.dot(&diff).sqrt()
+    }
 }
 
 impl<T: ops::Add<Output = T> + ops::Mul<Output = T> + ops::Sub<Output = T> + Sized + Copy + NumCast> Vec2<T> {
@@ -189,6 +194,11 @@ impl<T: Float> Vec3<T> {
     pub fn normalize(&self) -> Vec3<T> {
         let length = self.dot(&self).sqrt();
         Vec3 { x: self.x / length, y: self.y / length, z: self.z / length }
+    }
+
+    pub fn distance(&self, right: &Vec3<T>) -> T {
+        let diff = *self - *right;
+        diff.dot(&diff).sqrt()
     }
 }
 

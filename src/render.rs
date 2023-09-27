@@ -59,7 +59,7 @@ mod render {
     use lazy_static::lazy_static;
 
     use crate::consts::{self, H_WIDTH, H_FOV};
-    use crate::math::{Vec2, radians};
+    use crate::math::radians;
     use std::f32::consts::PI;
     use libm::atanf;
 
@@ -93,18 +93,6 @@ mod render {
         } else {
             -angle.tan() * (H_WIDTH as f32) + *SCREEN_DIST
         }
-    }
-
-    pub fn i32distance(point1: &Vec2<i32>, point2: &Vec2<i32>) -> i32 {
-        let delta = *point1 - *point2;
-        let delta_pw2 = delta * delta;
-        return (delta_pw2.x as f32 + delta_pw2.y as f32).sqrt() as i32;
-    }
-
-    pub fn f32distance(point1: &Vec2<f32>, point2: &Vec2<f32>) -> f32 {
-        let delta = *point1 - *point2;
-        let delta_pw2 = delta * delta;
-        return (delta_pw2.x + delta_pw2.y).sqrt();
     }
 }
 
@@ -335,7 +323,7 @@ impl WallContext {
             }
         };
         // Save wall width
-        self.width = render::f32distance(&wall2d[0].as_vec::<f32>(), &wall2d[1].as_vec::<f32>());
+        self.width = wall2d[0].as_vec::<f32>().distance(&wall2d[1].as_vec::<f32>());
         // Cache cos and sin
         let pcos = player.cos();
         let psin = player.sin();
@@ -359,10 +347,10 @@ impl WallContext {
                                as i32;
         }
         // Distance
-        self.distance = render::i32distance(
-            &Vec2::zeros(),
-            &Vec2::new((self.wall[0].x + self.wall[1].x) / 2, (self.wall[0].y + self.wall[1].y) / 2),
-        );
+        self.distance = Vec2::<f32>::zeros().distance(
+            &Vec2::new((self.wall[0].x + self.wall[1].x) as f32 / 2.0,
+                             (self.wall[0].y + self.wall[1].y) as f32 / 2.0)
+        ) as i32;
         // Store w[0], w[1] before clip
         let w_preclip = [
             self.wall[0].clone(), 
@@ -387,8 +375,8 @@ impl WallContext {
         // Save depth, NB. stored in Y coord
         for i in 0..2 {
             self.depth[i] = self.wall[i].y as f32;
-            self.uclip[i] = render::f32distance(&self.wall[i].xy().as_vec::<f32>(),
-                                                &w_preclip[i].xy().as_vec::<f32>()) / self.width;
+            self.uclip[i] = self.wall[i].xy().as_vec::<f32>()
+                            .distance(&w_preclip[i].xy().as_vec::<f32>()) / self.width;
         }
         // Screen position
         for i in 0..4 {
