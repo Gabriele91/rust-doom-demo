@@ -3,6 +3,8 @@ mod math;
 mod world;
 mod player;
 mod render;
+mod render2D;
+mod render3D;
 mod windows;
 mod map;
 mod tga;
@@ -12,6 +14,8 @@ mod texture;
 use crate::map::Map;
 use crate::player::Player;
 use crate::render::Render;
+use crate::render2D::Render2D;
+use crate::render3D::Render3D;
 use crate::texture::TextureSet;
 // Using
 use winit::{
@@ -21,6 +25,7 @@ use winit::{
 use winit_input_helper::WinitInputHelper;
 use clap::{Command, Arg, ArgMatches, ArgAction};
 use std::rc::Rc;
+use std::boxed::Box;
 
 fn shell_args() -> ArgMatches {
     Command::new("Rust-doom-demo")
@@ -75,8 +80,10 @@ fn main() {
     // Surface
     let mut pixels = windows::pixes_from_size(&window, consts::WIDTH, consts::HEIGHT).unwrap();
 
-    // Render
-    let mut render = Render::new(map.world, texset);
+    // Renders
+    let mut render3D: Box<&mut dyn Render> = Box::new(&Render3D::new(&map.world, &texset));
+    let mut render2D: Box<&mut dyn Render> = Box::new(&Render2D::new(&map.world));
+    let mut render:  = render3D;
 
     // Main loop
     event_loop.run(
@@ -101,6 +108,12 @@ fn main() {
                         if input.key_pressed(VirtualKeyCode::Escape) || input.close_requested() {
                             *control_flow = ControlFlow::Exit;
                             return;
+                        }
+                        // Change render
+                        if input.key_held(VirtualKeyCode::Numpad2) {
+                            render = Box::leak(Box::new(render2D));
+                        } else {
+                            render = Box::leak(Box::new(render3D));
                         }
                         // Player inputs
                         if classic {
