@@ -3,8 +3,8 @@ mod math;
 mod world;
 mod player;
 mod render;
-mod render2D;
-mod render3D;
+mod render_2d;
+mod render_3d;
 mod windows;
 mod map;
 mod tga;
@@ -14,8 +14,8 @@ mod texture;
 use crate::map::Map;
 use crate::player::Player;
 use crate::render::Render;
-use crate::render2D::Render2D;
-use crate::render3D::Render3D;
+use crate::render_2d::Render2D;
+use crate::render_3d::Render3D;
 use crate::texture::TextureSet;
 // Using
 use winit::{
@@ -25,7 +25,7 @@ use winit::{
 use winit_input_helper::WinitInputHelper;
 use clap::{Command, Arg, ArgMatches, ArgAction};
 use std::rc::Rc;
-use std::boxed::Box;
+use std::cell::RefCell;
 
 fn shell_args() -> ArgMatches {
     Command::new("Rust-doom-demo")
@@ -81,9 +81,10 @@ fn main() {
     let mut pixels = windows::pixes_from_size(&window, consts::WIDTH, consts::HEIGHT).unwrap();
 
     // Renders
-    let mut render3D: Box<&mut dyn Render> = Box::new(&Render3D::new(&map.world, &texset));
-    let mut render2D: Box<&mut dyn Render> = Box::new(&Render2D::new(&map.world));
-    let mut render:  = render3D;
+    let render_3d: Rc<RefCell<dyn Render>> = Rc::new(RefCell::new(Render3D::new(&map.world, &texset)));
+    let render_2d: Rc<RefCell<dyn Render>> = Rc::new(RefCell::new(Render2D::new(&map.world, 1.0, 4)));
+    let mut render: Rc<RefCell<dyn Render>> = Rc::clone(&render_3d);
+
 
     // Main loop
     event_loop.run(
@@ -95,7 +96,7 @@ fn main() {
                 // Winit_input_helper doesn't support this event
                 Event::RedrawRequested(_) => {
                     windows::clear_background(&mut pixels, consts::BACKGROUND_COLOR);
-                    render.draw(&mut pixels, &player);
+                    render.borrow_mut().draw(&mut pixels, &player);
                     if let Err(_) = pixels.render() {
                         *control_flow = ControlFlow::Exit;
                         return;
@@ -110,10 +111,10 @@ fn main() {
                             return;
                         }
                         // Change render
-                        if input.key_held(VirtualKeyCode::Numpad2) {
-                            render = Box::leak(Box::new(render2D));
+                        if input.key_held(VirtualKeyCode::Tab) {
+                            render = Rc::clone(&render_2d);
                         } else {
-                            render = Box::leak(Box::new(render3D));
+                            render = Rc::clone(&render_3d);
                         }
                         // Player inputs
                         if classic {
