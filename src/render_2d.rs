@@ -13,7 +13,7 @@ use pixels::Pixels;
 pub struct Render2D {
     pub world: Rc<World>,
     pub scale: f32,
-    pub player_size: i32,
+    pub player_size: i32
 }
 
 impl Render2D {
@@ -66,51 +66,57 @@ impl Render for Render2D {
         for sector in &self.world.sectors {
             for wall_id in sector.wall.x..sector.wall.y {
                 // Wall to draw
-                let mut from = self.world.walls[wall_id as usize].point1.clone();
-                let mut to = self.world.walls[wall_id as usize].point2.clone();
-                // Player as center:
-                from = from - player.position.xy();
-                to = to - player.position.xy();
-                // Scale
-                from = (from.as_vec::<f32>() * self.scale).as_vec::<i32>();
-                to = (to.as_vec::<f32>() * self.scale).as_vec::<i32>();
-                // Center of the screen
-                from += Vec2::new(H_WIDTH as i32, 0);
-                to += Vec2::new(H_WIDTH as i32, 0);
-                // Draw
-                Render2D::draw_line(pixels, &from, &to, &[0xFF, 0xFF, 0xFF, 0xFF]);
-                // Draw Player
-                //    0
-                //   /\
-                // 1/_\2
-                //
-                let mut shape: [Vec2<i32>; 3] = [
-                    Vec2::new(0, self.player_size),
-                    Vec2::new(-self.player_size, -self.player_size),
-                    Vec2::new(self.player_size, -self.player_size),
+                let mut wall_2d = [
+                    self.world.walls[wall_id as usize].point1.clone(),
+                    self.world.walls[wall_id as usize].point2.clone(),
                 ];
-                // Rotation
-                for point in &mut shape {
-                    let x = ((point.x as f32) * player.cos() + (point.y as f32) * player.sin()) as i32;
-                    let y = ((point.y as f32) * player.cos() - (point.x as f32) * player.sin()) as i32;
-                    *point = Vec2::new(x, y);
+                // Player as center:
+                for pwall in &mut wall_2d {
+                    *pwall -= player.position.xy();
+                }
+                // Offset of player shape
+                for pwall in &mut wall_2d {
+                    *pwall -= Vec2::new(0, (self.player_size as f32 * (4.0 / self.scale) * player.cos()) as i32);
                 }
                 // Scale
-                for point in &mut shape {
-                    *point += (point.as_vec::<f32>() * self.scale).as_vec::<i32>();
+                for pwall in &mut wall_2d {
+                    *pwall = (pwall.as_vec::<f32>() * self.scale).as_vec::<i32>();
                 }
-                // Shape offset
-                let x_offset = ((self.player_size as f32) * player.sin()) as i32;
-                let y_offset = ((self.player_size as f32) * player.cos()) as i32;
-                // To center
-                for point in &mut shape {
-                    *point += Vec2::new(H_WIDTH as i32 - x_offset, H_HEIGHT as i32 - y_offset);
+                // Center of the screen
+                for pwall in &mut wall_2d {
+                    *pwall += Vec2::new(H_WIDTH as i32, H_HEIGHT as i32);
                 }
-                // Draw
-                for id in [[0,1],[1,2],[2,0]] {
-                    Render2D::draw_line(pixels, &shape[id[0]], &shape[id[1]], &[0x00, 0xFF, 0x00, 0xFF]);  
-                }                            
+                // Draw wall                                                        
+                Render2D::draw_line(pixels, &wall_2d[0], &wall_2d[1], &[0xFF, 0xFF, 0xFF, 0xFF]);
             }
+        }
+        // Draw Player
+        //    0
+        //   /\
+        // 1/_\2
+        //
+        let mut shape: [Vec2<i32>; 3] = [
+            Vec2::new(0, self.player_size),
+            Vec2::new(-self.player_size, -self.player_size),
+            Vec2::new(self.player_size, -self.player_size),
+        ];
+        // Rotation
+        for point in &mut shape {
+            let x = ((point.x as f32) * player.cos() + (point.y as f32) * player.sin()) as i32;
+            let y = ((point.y as f32) * player.cos() - (point.x as f32) * player.sin()) as i32;
+            *point = Vec2::new(x, y);
+        }
+        // Scale
+        for point in &mut shape {
+            *point += (point.as_vec::<f32>() * self.scale).as_vec::<i32>();
+        }
+        // Center
+        for point in &mut shape {
+            *point += Vec2::new(H_WIDTH as i32, H_HEIGHT as i32);
+        }      
+        // Draw player
+        for id in [[0,1],[1,2],[2,0]] {
+            Render2D::draw_line(pixels, &shape[id[0]], &shape[id[1]], &[0x00, 0xFF, 0x00, 0xFF]);  
         }
     }
 
