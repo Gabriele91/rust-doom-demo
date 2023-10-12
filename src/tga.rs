@@ -121,7 +121,7 @@ pub fn from_rgba5551_to_rgba_32(data: &[u8], width: usize, height: usize) -> Opt
             None => return None
         };
         let (r,g,b,a) = read_rgba5551(chk);
-        output.extend_from_slice(&[r * 255 / 31, g * 255 / 31, b * 255 / 31, a * 255]);
+        output.extend_from_slice(&[((r as u16 * 255) / 31) as u8, ((g as u16 * 255) / 31) as u8, ((b as u16 * 255) / 31) as u8, a * 255]);
     }
 
     return Some(output);
