@@ -82,7 +82,7 @@ fn main() {
 
     // Renders
     let render_3d: Rc<RefCell<dyn Render>> = Rc::new(RefCell::new(Render3D::new(&map.world, &texset)));
-    let render_2d: Rc<RefCell<dyn Render>> = Rc::new(RefCell::new(Render2D::new(&map.world, 0.5, 5)));
+    let render_2d: Rc<RefCell<dyn Render>> = Rc::new(RefCell::new(Render2D::new(&map.world, &texset, 0.5, 3)));
     let mut render: Rc<RefCell<dyn Render>> = Rc::clone(&render_3d);
 
 

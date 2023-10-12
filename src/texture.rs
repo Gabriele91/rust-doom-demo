@@ -24,6 +24,27 @@ impl Texture {
         return y * self.row_size() + x * (self.channels as usize);
     }
 
+    pub fn avg_color<const CHANNELS: usize>(&self) -> [u8; CHANNELS] {
+        // Compute sum
+        let mut sum_colors: [u64; CHANNELS] = [0xff; CHANNELS];
+        for y in 0..self.dimensions.y {
+            for x in 0..self.dimensions.x {
+                let pixel_colors = self.fix_pixel::<CHANNELS>(x, y);
+                for c in 0..self.channels as usize {
+                    sum_colors[c] += pixel_colors[c] as u64;
+                }
+            }
+        }
+        // AVG and Cast
+        let mut colors: [u8; CHANNELS] = [0xff; CHANNELS];
+        let num_of_pixels = (self.dimensions.x * self.dimensions.y) as u64;
+        for i in 0..self.channels as usize {
+            colors[i] = (sum_colors[i] / num_of_pixels) as u8;
+        }
+        // Return
+        return colors;
+    }
+
     pub fn fix_pixel<const CHANNELS: usize>(&self, x: usize, y: usize) -> [u8; CHANNELS] {
         let mut colors: [u8; CHANNELS] = [0xff; CHANNELS];
         let pindex = self.pixel_index(x, y);
